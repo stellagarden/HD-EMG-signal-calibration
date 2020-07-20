@@ -11,6 +11,7 @@ def load_mat_files(dataDir):
     return mats
 
 def butter_bandpass_filter(data, lowcut=20.0, highcut=400.0, fs=5000.0, order=4):
+    ######################### find proper fs value #############################
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
@@ -19,13 +20,12 @@ def butter_bandpass_filter(data, lowcut=20.0, highcut=400.0, fs=5000.0, order=4)
     return y
 
 def plot_bandpass_filtered_data(data):
-    f0 = 600.0
     plt.figure(1)
     plt.clf()
     plt.plot(data, label='Noisy signal')
  
     y = butter_bandpass_filter(data)
-    plt.plot(y, label='Filtered signal (%g Hz)' % f0)
+    plt.plot(y, label='Filtered signal')
     plt.xlabel('time (seconds)')
     plt.grid(True)
     plt.axis('tight')
