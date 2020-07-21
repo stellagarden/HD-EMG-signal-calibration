@@ -44,21 +44,28 @@ def main():
                 # Preprocessing : Applying Fourth order butterworth band-pass filter (20-400Hz)
                 one_try[0][i]=butter_bandpass_filter(one_try[0][i])
                 # Segmentation (1) Construct windows
-                windows=[]
-                for j in range(len(one_try[0][i])):
+                one_try[0][i]=np.delete(one_try[0][i], list(range((len(one_try[0][i])//150)*150,len(one_try[0][i]))))
+                
+
+
+                """for j in range(len(one_try[0][i])):
+                    if j==150:
+                        windows=np.array([one_try[0][i][j-150:j]])
+                        continue
                     if j!=0 and j%150 == 0:
-                        windows.append(one_try[0][i][j-150:j])
+                        windows=np.append(windows, [one_try[0][i][j-150:j]], axis=0)"""
                 # Segmentation (2) Compute RMS for each window
-                rms_windows=[]
+                rms_windows=np.array([])
                 for window in windows:
-                    rms_windows.append(np.sqrt(np.mean(window**2)))
-                print(type(one_try[0][i]))
-                one_try[0][i] = list(one_try[0][i])
-                one_try[0][i] = one_try[0][i].tolist()
+                    rms_windows=np.append(rms_windows, np.sqrt(np.mean(window**2)))
+                
+                one_try[0][i].resize((1,40))
                 
                 print(type(one_try[0][i]))
+                print(len(one_try[0][i]))
+
                 one_try[0][i]=rms_windows
-                
+
                 print(type(one_try[0][i]))
                 print(len(one_try[0][i]))
                 break
