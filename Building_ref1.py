@@ -10,8 +10,7 @@ def load_mat_files(dataDir):
         mats.append(io.loadmat(dataDir+file)['gestures'])
     return mats
 
-def butter_bandpass_filter(data, lowcut=20.0, highcut=400.0, fs=5000.0, order=4):
-    ######################### find proper fs value #############################
+def butter_bandpass_filter(data, lowcut=20.0, highcut=400.0, fs=1/0.000488, order=4):
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
