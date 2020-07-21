@@ -39,9 +39,10 @@ def main():
     gestures[0]=gestures[0][[1,3,6,7,10,12,18,24,25,29]]
 
     #Preprocessing : Applying Fourth order butterworth band-pass filter (20-400Hz)
-    print(gestures[0][0][0][0])
-    #preprocessing_bandpass_filter(gestures)
-    plot_bandpass_filtered_data(gestures[0][0][0][0])
-
+    for gesture in gestures:
+        for one_try in gesture:
+            for electrode in one_try[0]:
+                electrode=butter_bandpass_filter(electrode)
+    
 
 main()
