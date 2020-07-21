@@ -38,11 +38,29 @@ def main():
     #In idle gesture, we just use 2,4,7,8,11,13,19,25,26,30th tries in order to match the number of datas
     gestures[0]=gestures[0][[1,3,6,7,10,12,18,24,25,29]]
 
-    #Preprocessing : Applying Fourth order butterworth band-pass filter (20-400Hz)
     for gesture in gestures:
         for one_try in gesture:
-            for electrode in one_try[0]:
-                electrode=butter_bandpass_filter(electrode)
+            for channel in one_try[0]:
+                # Preprocessing : Applying Fourth order butterworth band-pass filter (20-400Hz)
+                channel=butter_bandpass_filter(channel)
+                # Segmentation (1) Construct windows
+                windows=[]
+                for i in range(len(channel)):
+                    if i!=0 and i%150 == 0:
+                        windows.append(channel[i-150:i])
+                # Segmentation (2) Compute RMS for each window
+                rms_windows=[]
+                for window in windows:
+                    rms_windows.append(np.sqrt(np.mean(window**2)))
+                channel=rms_windows
+                print(len(channel))
+                break
+            break
+        break
     
+
+    print(len(gestures[0][0][0][0]))
+                
+
 
 main()
