@@ -40,20 +40,27 @@ def main():
 
     for gesture in gestures:
         for one_try in gesture:
-            for channel in one_try[0]:
+            for i in range(len(one_try[0])):
                 # Preprocessing : Applying Fourth order butterworth band-pass filter (20-400Hz)
-                channel=butter_bandpass_filter(channel)
+                one_try[0][i]=butter_bandpass_filter(one_try[0][i])
                 # Segmentation (1) Construct windows
                 windows=[]
-                for i in range(len(channel)):
-                    if i!=0 and i%150 == 0:
-                        windows.append(channel[i-150:i])
+                for j in range(len(one_try[0][i])):
+                    if j!=0 and j%150 == 0:
+                        windows.append(one_try[0][i][j-150:j])
                 # Segmentation (2) Compute RMS for each window
                 rms_windows=[]
                 for window in windows:
                     rms_windows.append(np.sqrt(np.mean(window**2)))
-                channel=rms_windows
-                print(len(channel))
+                print(type(one_try[0][i]))
+                one_try[0][i] = list(one_try[0][i])
+                one_try[0][i] = one_try[0][i].tolist()
+                
+                print(type(one_try[0][i]))
+                one_try[0][i]=rms_windows
+                
+                print(type(one_try[0][i]))
+                print(len(one_try[0][i]))
                 break
             break
         break
