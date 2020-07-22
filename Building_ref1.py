@@ -40,9 +40,13 @@ def compute_RMS(datas):
     return np.sqrt(np.mean(datas**2))
 
 def compute_RMS_for_each_windows(windows):
-    RMSs=np.array([])
+    init=1
     for window in windows:
-        RMSs=np.append(RMSs, compute_RMS(window))
+        if init==1:
+            RMSs=np.array([[compute_RMS(window)]])
+            init=0
+            continue
+        RMSs=np.append(RMSs, [[compute_RMS(window)]], axis=0)
     return RMSs
 
 
@@ -54,20 +58,25 @@ def main():
 
     for gesture in gestures:
         for one_try in gesture:
-            for channel in one_try[0]:
+            for i in range(len(one_try[0])):
+                if (i-1)%8 == 0:
+                    continue
                 # Preprocessing : Applying Fourth order butterworth band-pass filter (20-400Hz)
-                channel=butter_bandpass_filter(channel)
+                filtered_channel=butter_bandpass_filter(one_try[0][i])
                 # Segmentation (1) Construct windows
-                windows=divide_to_windows(channel)
+                windows_per_channel=divide_to_windows(filtered_channel)
                 # Segmentation (2) Compute RMS for each window
-                RMSwindows=compute_RMS_for_each_windows(windows)
-                
-
-
+                RMSwindows_per_channel=compute_RMS_for_each_windows(windows_per_channel)
+                if i==0:
+                    RMSwindows=np.array(RMSwindows_per_channel)
+                    continue
+                RMSwindows=np.append(RMSwindows, RMSwindows_per_channel, axis=1)
                 break
             break
         break
+
+    return RMSwindows
                 
 
 
-main()
+print(main())
