@@ -139,9 +139,9 @@ def main():
     # Segmentation : Dertermine which window is ACTIVE
     ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures.tolist())
 
-    print(len(ACTIVE_RMS_gestures))
-    print(len(ACTIVE_RMS_gestures[0]))
-    print(len(ACTIVE_RMS_gestures[0][0]))
-    print(len(ACTIVE_RMS_gestures[0][0][0]))
+    print("# of gestures: %d" %len(ACTIVE_RMS_gestures))
+    print("# of tries: %d" %len(ACTIVE_RMS_gestures[0]))
+    print("# of windows: %d" %len(ACTIVE_RMS_gestures[0][0]))
+    print("# of channels: %d" %len(ACTIVE_RMS_gestures[0][0][0]))
 
 main()
