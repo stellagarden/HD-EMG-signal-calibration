@@ -2,7 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import io
-from scipy.signal import butter, lfilter, freqz
+from scipy.signal import butter, lfilter, freqz, medfilt
 
 def load_mat_files(dataDir):
     mats = []
@@ -86,6 +86,27 @@ def base_normalization(RMS_gestures):
                     RMS_gestures[i_ges][i_try][i_win][i_ch]-=average_channel_idle_gesture[i_ch]
     return RMS_gestures
 
+def ACTIVE_filter(RMS_gestures):
+    for i_ges in range(len(RMS_gestures)):
+        for i_try in range(len(RMS_gestures[i_ges])):
+            # Segmentation : Determine whether ACTIVE : Compute summarized RMS
+            sum_RMSs=[sum(window) for window in RMS_gestures[i_ges][i_try]]
+            threshold=sum(sum_RMSs)/len(sum_RMSs)
+            # Segmentation : Determine whether ACTIVE
+            i_ACTIVEs=[]
+            for i_win in range(len(RMS_gestures[i_ges][i_try])):
+                if sum_RMSs[i_win] > threshold:
+                    i_ACTIVEs.append(i_win)
+            for i in range(len(i_ACTIVEs)):
+                if i==0:
+                    continue
+                if i_ACTIVEs[i]-i_ACTIVEs[i-1] == 2:
+                    i_ACTIVEs.insert(i, i_ACTIVEs[i-1]+1)
+            # Segmentation : Determine whether ACTIVE : delete if the window is not ACTIVE
+            for i_win in range(len(RMS_gestures[i_ges][i_try])):
+                if not i_win in i_ACTIVEs:
+                    del RMS_gestures[i_ges][i_try][i_win]
+    return RMS_gestures        
 
 
 def main():
@@ -110,13 +131,12 @@ def main():
             init_gesture=0
             continue
         RMS_gestures = np.append(RMS_gestures, [RMS_tries_for_gesture], axis=0)
-    # Base normalization
+    # Segmentation : Data processing : Base normalization
     RMS_gestures=base_normalization(RMS_gestures)
-
-    print(len(RMS_gestures))
-    print(len(RMS_gestures[0]))
-    print(len(RMS_gestures[0][0]))
-    print(len(RMS_gestures[0][0][0]))
+    # Segmentation : Data processing : Median filtering
+    RMS_gestures=medfilt(RMS_gestures, kernel_size=3)
+    # Segmentation : Dertermine which window is ACTIVE
+    ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures)
 
 
 main()
