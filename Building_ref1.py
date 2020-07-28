@@ -103,10 +103,11 @@ def ACTIVE_filter(RMS_gestures):
                 if i_ACTIVEs[i]-i_ACTIVEs[i-1] == 2:
                     i_ACTIVEs.insert(i, i_ACTIVEs[i-1]+1)
             # Segmentation : Determine whether ACTIVE : delete if the window is not ACTIVE
-            for i_win in range(len(RMS_gestures[i_ges][i_try])):
+            for i_win in reversed(range(len(RMS_gestures[i_ges][i_try]))):
                 if not i_win in i_ACTIVEs:
+                    print(i_ges, i_try, i_win)
                     del RMS_gestures[i_ges][i_try][i_win]
-    return RMS_gestures        
+    return RMS_gestures
 
 
 def main():
@@ -136,7 +137,11 @@ def main():
     # Segmentation : Data processing : Median filtering
     RMS_gestures=medfilt(RMS_gestures, kernel_size=3)
     # Segmentation : Dertermine which window is ACTIVE
-    ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures)
+    ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures.tolist())
 
+    print(len(ACTIVE_RMS_gestures))
+    print(len(ACTIVE_RMS_gestures[0]))
+    print(len(ACTIVE_RMS_gestures[0][0]))
+    print(len(ACTIVE_RMS_gestures[0][0][0]))
 
 main()
