@@ -87,7 +87,7 @@ def base_normalization(RMS_gestures):
 
 def ACTIVE_filter(RMS_gestures):
     for i_ges in range(len(RMS_gestures)):
-        for i_try in range(len(RMS_gestures[i_ges])):
+        for i_try in range(1,len(RMS_gestures[i_ges])): #########TEST#############
             # Segmentation : Determine whether ACTIVE : Compute summarized RMS
             sum_RMSs=[sum(window) for window in RMS_gestures[i_ges][i_try]]
             threshold=sum(sum_RMSs)/len(sum_RMSs)
