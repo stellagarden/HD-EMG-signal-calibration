@@ -87,7 +87,7 @@ def base_normalization(RMS_gestures):
 
 def ACTIVE_filter(RMS_gestures):
     for i_ges in range(len(RMS_gestures)):
-        for i_try in range(1,len(RMS_gestures[i_ges])): #########TEST#############
+        for i_try in range(1, len(RMS_gestures[i_ges])): #########TEST#############
             # Segmentation : Determine whether ACTIVE : Compute summarized RMS
             sum_RMSs=[sum(window) for window in RMS_gestures[i_ges][i_try]]
             threshold=sum(sum_RMSs)/len(sum_RMSs)
@@ -101,6 +101,14 @@ def ACTIVE_filter(RMS_gestures):
                     continue
                 if i_ACTIVEs[i]-i_ACTIVEs[i-1] == 2:
                     i_ACTIVEs.insert(i, i_ACTIVEs[i-1]+1)
+            # Segmentation : Determine whether ACTIVE : Select the longest contiguous sequences
+            seg=[]
+            for i in range(len(i_ACTIVEs)):
+                if i==0:
+                    continue
+                if i_ACTIVEs[i]-i_ACTIVEs[i-1] == 1:
+                    
+                    
             # Segmentation : Determine whether ACTIVE : delete if the window is not ACTIVE
             for i_win in reversed(range(len(RMS_gestures[i_ges][i_try]))):
                 if not i_win in i_ACTIVEs:
@@ -139,6 +147,7 @@ def main():
     # Segmentation : Data processing : Base normalization
     RMS_gestures=base_normalization(RMS_gestures)
     # Segmentation : Data processing : Median filtering
+    ############## ZERO-PADDING #######################
     RMS_gestures=medfilt(RMS_gestures, kernel_size=3)
     # Segmentation : Dertermine which window is ACTIVE
     ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures.tolist())
