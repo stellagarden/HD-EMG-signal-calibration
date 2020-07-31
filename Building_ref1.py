@@ -73,13 +73,12 @@ def average_for_channel(gesture):
         for i_win in range(gesture.shape[1]):
             for i_try in range(gesture.shape[0]):
                 sum+=gesture[i_try][i_win][i_ch]
-        average=np.append(average, [sum/(i_win*i_try)])
+        average=np.append(average, [sum/(gesture.shape[1]*gesture.shape[0])])
     return average
 
 def base_normalization(RMS_gestures):
     average_channel_idle_gesture=average_for_channel(RMS_gestures[0])
-    for i_ges in range(1, RMS_gestures.shape[0]):   # Except idle gesture
-        ################## idle gesture는 base normalization을 해줘야 하나 안 해줘야 하나?? ############
+    for i_ges in range(RMS_gestures.shape[0]):   # Including idle gesture
         for i_try in range(RMS_gestures.shape[1]):
             for i_win in range(RMS_gestures.shape[2]):
                 for i_ch in range(RMS_gestures.shape[3]):
@@ -137,7 +136,6 @@ def main():
             init_gesture=0
             continue
         RMS_gestures = np.append(RMS_gestures, [RMS_tries_for_gesture], axis=0) # Adding blocks
-    
     # Segmentation : Data processing : Base normalization
     RMS_gestures=base_normalization(RMS_gestures)
     # Segmentation : Data processing : Median filtering
