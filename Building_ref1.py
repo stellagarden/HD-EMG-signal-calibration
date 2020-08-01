@@ -49,21 +49,21 @@ def compute_RMS_for_each_windows(windows):
         RMSs=np.append(RMSs, [[compute_RMS(window)]], axis=0)
     return RMSs
 
-def create_168_dimensional_window_vectors(one_try):
-    for i in range(len(one_try[0])):
-        # Segmentation : Data processing : Discard uesless data
-        if (i-1)%8 == 0:
+def create_168_dimensional_window_vectors(channels):
+    for i_ch in range(len(channels)):
+        # Segmentation : Data processing : Discard useless data
+        if (i_ch+1)%8 == 0:
             continue
-        # Preprocessing : Apply butterworth band-pass filter
-        filtered_channel=butter_bandpass_filter(one_try[0][i])
+        # Preprocessing : Apply butterworth band-pass filter]
+        filtered_channel=butter_bandpass_filter(channels[i_ch])
         # Segmentation : Data processing : Divide continuous data into 150 samples window
         windows_per_channel=divide_to_windows(filtered_channel)
         # Segmentation : Compute RMS for each channel
         RMSwindows_per_channel=compute_RMS_for_each_windows(windows_per_channel)
-        if i==0:
+        if i_ch==0:
             RMS_one_try=np.array(RMSwindows_per_channel)
             continue
-        RMS_one_try=np.append(RMS_one_try, RMSwindows_per_channel, axis=1)
+        RMS_one_try=np.append(RMS_one_try, RMSwindows_per_channel, axis=1)  # Adding column
     return RMS_one_try
 
 def average_for_channel(gesture):
@@ -73,13 +73,12 @@ def average_for_channel(gesture):
         for i_win in range(gesture.shape[1]):
             for i_try in range(gesture.shape[0]):
                 sum+=gesture[i_try][i_win][i_ch]
-        average=np.append(average, [sum])
+        average=np.append(average, [sum/(gesture.shape[1]*gesture.shape[0])])
     return average
 
 def base_normalization(RMS_gestures):
     average_channel_idle_gesture=average_for_channel(RMS_gestures[0])
-    print(average_channel_idle_gesture[:4])
-    for i_ges in range(RMS_gestures.shape[0]):
+    for i_ges in range(RMS_gestures.shape[0]):   # Including idle gesture
         for i_try in range(RMS_gestures.shape[1]):
             for i_win in range(RMS_gestures.shape[2]):
                 for i_ch in range(RMS_gestures.shape[3]):
@@ -102,46 +101,68 @@ def ACTIVE_filter(RMS_gestures):
                     continue
                 if i_ACTIVEs[i]-i_ACTIVEs[i-1] == 2:
                     i_ACTIVEs.insert(i, i_ACTIVEs[i-1]+1)
+            # Segmentation : Determine whether ACTIVE : Select the longest contiguous sequences
+            segs=[]
+            contiguous = 0
+            for i in range(len(i_ACTIVEs)):
+                if i == len(i_ACTIVEs)-1:
+                    if contiguous!=0:
+                        segs.append((start, contiguous))
+                    break
+                if i_ACTIVEs[i+1]-i_ACTIVEs[i] == 1:
+                    if contiguous == 0:
+                        start=i_ACTIVEs[i]
+                    contiguous+=1
+                else:
+                    if contiguous != 0:
+                        contiguous+=1
+                        segs.append((start, contiguous))
+                        contiguous=0
+            seg_start, seg_len = sorted(segs, key=lambda seg: seg[1], reverse=True)[0]
             # Segmentation : Determine whether ACTIVE : delete if the window is not ACTIVE
             for i_win in reversed(range(len(RMS_gestures[i_ges][i_try]))):
-                if not i_win in i_ACTIVEs:
-                    print(i_ges, i_try, i_win)
+                if not i_win in range(seg_start, seg_start+seg_len):
                     del RMS_gestures[i_ges][i_try][i_win]
     return RMS_gestures
 
+def check(x):
+    print("length: ", len(x))
+    print("type: ", type(x))
+    raise ValueError("-------------WORKING LINE--------------")
 
 def main():
-    #loading .mat files consist of 0,1,2,3,11,17,18,21,23,24,25 gestures
-    gestures = load_mat_files("../data/ref1_subject1_session1/")
+    #loading .mat files consist of 0,1,2,3(,11,17,18,21,23,24,25 not for light) gestures
+    gestures = load_mat_files("../data/ref1_subject1_session1_light/")  # gestures : list
     #In idle gesture, we just use 2,4,7,8,11,13,19,25,26,30th tries in order to match the number of datas
     gestures[0]=gestures[0][[1,3,6,7,10,12,18,24,25,29]]
+    
     # Signal Preprocessing & Data processing for segmentation
     init_gesture=1
     for gesture in gestures:
         init_try=1
         for one_try in gesture:
-            RMS_one_try = create_168_dimensional_window_vectors(one_try)
+            RMS_one_try = create_168_dimensional_window_vectors(one_try[0]) # one_try[0] : channels, ndarray
             if init_try == 1:
                 RMS_tries_for_gesture = np.array([RMS_one_try])
                 init_try=0
                 continue
-            RMS_tries_for_gesture = np.append(RMS_tries_for_gesture, [RMS_one_try], axis=0)
-
+            RMS_tries_for_gesture = np.append(RMS_tries_for_gesture, [RMS_one_try], axis=0) # Adding height
         if init_gesture==1:
             RMS_gestures = np.array([RMS_tries_for_gesture])
             init_gesture=0
             continue
-        RMS_gestures = np.append(RMS_gestures, [RMS_tries_for_gesture], axis=0)
+        RMS_gestures = np.append(RMS_gestures, [RMS_tries_for_gesture], axis=0) # Adding blocks
     # Segmentation : Data processing : Base normalization
     RMS_gestures=base_normalization(RMS_gestures)
     # Segmentation : Data processing : Median filtering
+    ############################## ZERO-PADDING #################################
     RMS_gestures=medfilt(RMS_gestures, kernel_size=3)
     # Segmentation : Dertermine which window is ACTIVE
     ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures.tolist())
 
-    print(len(ACTIVE_RMS_gestures))
-    print(len(ACTIVE_RMS_gestures[0]))
-    print(len(ACTIVE_RMS_gestures[0][0]))
-    print(len(ACTIVE_RMS_gestures[0][0][0]))
+    print("# of gestures: %d" %len(ACTIVE_RMS_gestures))
+    print("# of tries: %d" %len(ACTIVE_RMS_gestures[0]))
+    print("# of windows: %d" %len(ACTIVE_RMS_gestures[0][0]))
+    print("# of channels: %d" %len(ACTIVE_RMS_gestures[0][0][0]))
 
 main()
