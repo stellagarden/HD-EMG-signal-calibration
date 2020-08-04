@@ -194,5 +194,6 @@ def main():
     ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures.tolist())
     # Feature extraction : Mean normalization for all channels in each window
     mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
+
     
 main()
