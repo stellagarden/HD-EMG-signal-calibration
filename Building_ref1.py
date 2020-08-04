@@ -126,12 +126,6 @@ def ACTIVE_filter(RMS_gestures):
                     del RMS_gestures[i_ges][i_try][i_win]
     return RMS_gestures
 
-def check(x):
-    print("length: ", len(x))
-    print("type: ", type(x))
-    print(x)
-    raise ValueError("-------------WORKING LINE--------------")
-
 def medfilt(channel, kernel_size=3):
     filtered=np.zeros(len(channel))
     for i in range(len(channel)):
@@ -139,6 +133,35 @@ def medfilt(channel, kernel_size=3):
             continue
         filtered[i]=median([channel[j] for j in range(i-kernel_size//2, i+kernel_size//2+1)])
     return filtered
+
+def mean_normalization(ACTIVE_RMS_gestures):
+    for i_ges in range(len(ACTIVE_RMS_gestures)):
+        for i_try in range(len(ACTIVE_RMS_gestures[i_ges])):
+            for i_win in range(len(ACTIVE_RMS_gestures[i_ges][i_try])):
+                delta=max(ACTIVE_RMS_gestures[i_ges][i_try][i_win])-min(ACTIVE_RMS_gestures[i_ges][i_try][i_win])
+                Mean=np.mean(ACTIVE_RMS_gestures[i_ges][i_try][i_win])
+                if Mean==0:
+                    print("ZERO MEAN: ", i_ges, i_try, i_win)
+                if delta==0:
+                    print("ZERO DELTA: ", i_ges, i_try, i_win)
+                for i_ch in range(len(ACTIVE_RMS_gestures[i_ges][i_try][i_win])):
+                    ACTIVE_RMS_gestures[i_ges][i_try][i_win][i_ch]=(ACTIVE_RMS_gestures[i_ges][i_try][i_win][i_ch]-Mean)/delta
+    raise ValueError
+    return ACTIVE_RMS_gestures
+# 2 3 6 7 8 -> 0 1 4 5 9
+def check(x):
+    print("length: ", len(x))
+    print("type: ", type(x))
+    print(x)
+    raise ValueError("-------------WORKING LINE--------------")
+
+def check_segment_len(ACTIVE_RMS_gestures):
+    for i in range(len(ACTIVE_RMS_gestures)):
+        print("%d번째 gesture의 각 try의 segment 길이들 : " %i, end='')
+        for j in range(len(ACTIVE_RMS_gestures[i])):
+            print(len(ACTIVE_RMS_gestures[i][j]), end=' ')
+        print()
+
 
 def main():
     #loading .mat files consist of 0,1,2,3(,11,17,18,21,23,24,25 not for light) gestures
@@ -162,6 +185,7 @@ def main():
             init_gesture=0
             continue
         RMS_gestures = np.append(RMS_gestures, [RMS_tries_for_gesture], axis=0) # Adding blocks
+
     # Segmentation : Data processing : Base normalization
     RMS_gestures=base_normalization(RMS_gestures)
     # Segmentation : Data processing : Median filtering
@@ -173,12 +197,10 @@ def main():
             RMS_gestures[i_ges][i_try]=channels.transpose()
     # Segmentation : Dertermine which window is ACTIVE
     ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures.tolist())
-
-    for i in range(len(ACTIVE_RMS_gestures)):
-        print("%d번째 gesture의 각 try의 segment 길이들 : " %i, end='')
-        for j in range(len(ACTIVE_RMS_gestures[i])):
-            print(len(ACTIVE_RMS_gestures[i][j]), end=' ')
-        print()
+    # Feature extraction : Mean normalization for all channels in each window
+    print(ACTIVE_RMS_gestures[0][0][0][:4])
+    mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
+    print(mean_normalized_RMS[0][0][0][:4])
     
 
 main()
