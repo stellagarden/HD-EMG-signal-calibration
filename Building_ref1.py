@@ -2,7 +2,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import io
-from scipy.signal import butter, lfilter, freqz, medfilt
+from scipy.signal import butter, lfilter, freqz
+from statistics import median
 
 def load_mat_files(dataDir):
     mats = []
@@ -131,6 +132,14 @@ def check(x):
     print(x)
     raise ValueError("-------------WORKING LINE--------------")
 
+def medfilt(channel, kernel_size=3):
+    filtered=np.zeros(len(channel))
+    for i in range(len(channel)):
+        if i-kernel_size//2 <0 or i+kernel_size//2 >=len(channel):
+            continue
+        filtered[i]=median([channel[j] for j in range(i-kernel_size//2, i+kernel_size//2+1)])
+    return filtered
+
 def main():
     #loading .mat files consist of 0,1,2,3(,11,17,18,21,23,24,25 not for light) gestures
     gestures = load_mat_files("../data/ref1_subject1_session1_light/")  # gestures : list
@@ -160,11 +169,8 @@ def main():
         for i_try in range(len(RMS_gestures[i_ges])):
             channels=RMS_gestures[i_ges][i_try].transpose()
             for i_ch in range(len(channels)):
-                channels[i_ch]=medfilt(channels[i_ch], kernel_size=3)
-                print(channels[i_ch])
-            check(channels)
+                channels[i_ch]=medfilt(channels[i_ch])
             RMS_gestures[i_ges][i_try]=channels.transpose()
-    check(RMS_gestures[0][0][0])
     # Segmentation : Dertermine which window is ACTIVE
     ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures.tolist())
 
