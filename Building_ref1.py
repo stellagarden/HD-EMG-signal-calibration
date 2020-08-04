@@ -175,8 +175,8 @@ def main():
     ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures.tolist())
 
     print("# of gestures: %d" %len(ACTIVE_RMS_gestures))
-    print("# of tries: %d" %len(ACTIVE_RMS_gestures[0]))
-    print("# of windows: %d" %len(ACTIVE_RMS_gestures[0][0]))
-    print("# of channels: %d" %len(ACTIVE_RMS_gestures[0][0][0]))
+    print("# of tries: %d" %len(ACTIVE_RMS_gestures[1]))
+    print("# of windows: %d" %len(ACTIVE_RMS_gestures[1][7]))
+    print("# of channels: %d" %len(ACTIVE_RMS_gestures[1][7][0]))
 
 main()
