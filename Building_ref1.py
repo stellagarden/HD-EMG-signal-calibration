@@ -95,7 +95,7 @@ def ACTIVE_filter(RMS_gestures):
             # Segmentation : Determine whether ACTIVE
             i_ACTIVEs=[]
             for i_win in range(len(RMS_gestures[i_ges][i_try])):
-                if sum_RMSs[i_win] > threshold:
+                if sum_RMSs[i_win] > threshold and i_win>0:     # Exclude 0th index
                     i_ACTIVEs.append(i_win)
             for i in range(len(i_ACTIVEs)):
                 if i==0:
@@ -140,16 +140,9 @@ def mean_normalization(ACTIVE_RMS_gestures):
             for i_win in range(len(ACTIVE_RMS_gestures[i_ges][i_try])):
                 delta=max(ACTIVE_RMS_gestures[i_ges][i_try][i_win])-min(ACTIVE_RMS_gestures[i_ges][i_try][i_win])
                 Mean=np.mean(ACTIVE_RMS_gestures[i_ges][i_try][i_win])
-                if Mean==0:
-                    print("ZERO MEAN: ", i_ges, i_try, i_win)
-                if delta==0:
-                    print("ZERO DELTA: ", i_ges, i_try, i_win)
                 for i_ch in range(len(ACTIVE_RMS_gestures[i_ges][i_try][i_win])):
                     ACTIVE_RMS_gestures[i_ges][i_try][i_win][i_ch]=(ACTIVE_RMS_gestures[i_ges][i_try][i_win][i_ch]-Mean)/delta
-    raise ValueError
     return ACTIVE_RMS_gestures
-# all zeros in 0th gesture : 2 3 6 7 8
-# not all zero :  0 1 4 5 9
 
 def check(x):
     print("length: ", len(x))
@@ -199,8 +192,7 @@ def main():
             RMS_gestures[i_ges][i_try]=channels.transpose()
     # Segmentation : Dertermine which window is ACTIVE
     ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures.tolist())
-    check(ACTIVE_RMS_gestures[0][2])
     # Feature extraction : Mean normalization for all channels in each window
-    # mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
+    mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
     
 main()
