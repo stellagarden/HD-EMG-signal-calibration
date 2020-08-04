@@ -128,6 +128,7 @@ def ACTIVE_filter(RMS_gestures):
 def check(x):
     print("length: ", len(x))
     print("type: ", type(x))
+    print(x)
     raise ValueError("-------------WORKING LINE--------------")
 
 def main():
@@ -155,8 +156,15 @@ def main():
     # Segmentation : Data processing : Base normalization
     RMS_gestures=base_normalization(RMS_gestures)
     # Segmentation : Data processing : Median filtering
-    ############################## ZERO-PADDING #################################
-    RMS_gestures=medfilt(RMS_gestures, kernel_size=3)
+    for i_ges in range(len(RMS_gestures)):
+        for i_try in range(len(RMS_gestures[i_ges])):
+            channels=RMS_gestures[i_ges][i_try].transpose()
+            for i_ch in range(len(channels)):
+                channels[i_ch]=medfilt(channels[i_ch], kernel_size=3)
+                print(channels[i_ch])
+            check(channels)
+            RMS_gestures[i_ges][i_try]=channels.transpose()
+    check(RMS_gestures[0][0][0])
     # Segmentation : Dertermine which window is ACTIVE
     ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures.tolist())
 
