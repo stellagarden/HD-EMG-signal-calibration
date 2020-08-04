@@ -148,7 +148,9 @@ def mean_normalization(ACTIVE_RMS_gestures):
                     ACTIVE_RMS_gestures[i_ges][i_try][i_win][i_ch]=(ACTIVE_RMS_gestures[i_ges][i_try][i_win][i_ch]-Mean)/delta
     raise ValueError
     return ACTIVE_RMS_gestures
-# 2 3 6 7 8 -> 0 1 4 5 9
+# all zeros in 0th gesture : 2 3 6 7 8
+# not all zero :  0 1 4 5 9
+
 def check(x):
     print("length: ", len(x))
     print("type: ", type(x))
@@ -197,10 +199,8 @@ def main():
             RMS_gestures[i_ges][i_try]=channels.transpose()
     # Segmentation : Dertermine which window is ACTIVE
     ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures.tolist())
+    check(ACTIVE_RMS_gestures[0][2])
     # Feature extraction : Mean normalization for all channels in each window
-    print(ACTIVE_RMS_gestures[0][0][0][:4])
-    mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
-    print(mean_normalized_RMS[0][0][0][:4])
+    # mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
     
-
 main()
