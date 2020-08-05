@@ -167,8 +167,13 @@ def segment_windowing(X, N=3):
             init_try=0
             continue
         X_N=np.append(X_N, [chs_windows.transpose()], axis=0)
-    teturn X_N
-        
+    return X_N
+
+def construct_label(mean_normalized_RMS):
+    y=[]
+    for i_ges in range(len(mean_normalized_RMS)):
+        y.extend([i_ges for i_try in range(len(mean_normalized_RMS[i_ges]))])
+    return y 
 
 def check(x):
     print("length: ", len(x))
@@ -224,10 +229,8 @@ def main():
     X = np.reshape(mean_normalized_RMS, -1)
     X_3 = segment_windowing(X,3)
     X_1 = segment_windowing(X,1)
-    y=[]
-    for i_ges in range(len(mean_normalized_RMS)):
-        y.extend([i_ges for i_try in range(len(mean_normalized_RMS[i_ges]))])
-    check(y)
+    y=construct_label(mean_normalized_RMS)
+    
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0)
     gnb = GaussianNB()
     y_pred = gnb.fit(X_train, y_train).predict(X_test)
