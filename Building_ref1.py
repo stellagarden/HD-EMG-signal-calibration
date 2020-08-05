@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 from scipy import io
 from scipy.signal import butter, lfilter, freqz
 from statistics import median
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
 
 def load_mat_files(dataDir):
     mats = []
@@ -147,7 +150,7 @@ def mean_normalization(ACTIVE_RMS_gestures):
 def check(x):
     print("length: ", len(x))
     print("type: ", type(x))
-    print(x)
+    #print("shape: ", x.shape)
     raise ValueError("-------------WORKING LINE--------------")
 
 def check_segment_len(ACTIVE_RMS_gestures):
@@ -194,6 +197,16 @@ def main():
     ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures.tolist())
     # Feature extraction : Mean normalization for all channels in each window
     mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
+    # Naive Bayes classifier
+    X = np.reshape(mean_normalized_RMS, -1)
+    y=[]
+    for i_ges in range(len(mean_normalized_RMS)):
+        y.extend([i_ges for i_try in range(len(mean_normalized_RMS[i_ges]))])
+    check(y)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0)
+    gnb = GaussianNB()
+    y_pred = gnb.fit(X_train, y_train).predict(X_test)
+    print("Number of mislabeled points out of a total %d points : %d" % (X_test.shape[0], (y_test != y_pred).sum()))
 
     
 main()

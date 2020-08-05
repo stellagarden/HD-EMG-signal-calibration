@@ -1,15 +1,13 @@
-from scipy.signal import butter, lfilter, freqz, medfilt
+import os
 import numpy as np
+import matplotlib.pyplot as plt
+from scipy import io
+from scipy.signal import butter, lfilter, freqz
 from statistics import median
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
 
-def medfilt(channel, kernel_size=3):
-    filtered=np.zeros(len(channel))
-    for i in range(len(channel)):
-        if i-kernel_size//2 <0 or i+kernel_size//2 >=len(channel):
-            continue
-        filtered[i]=median([channel[j] for j in range(i-kernel_size//2, i+kernel_size//2+1)])
-    return filtered
+X, y = load_iris(return_X_y=True)
 
-print(medfilt([8,52,1,546,12,15,48,1,32,4,84,5,21,5,9,4,23,4]))
-
-# 0 1 2 3 4 5 6 7 8 9
+print(y)
