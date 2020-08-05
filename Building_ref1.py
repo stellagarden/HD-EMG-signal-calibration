@@ -147,10 +147,33 @@ def mean_normalization(ACTIVE_RMS_gestures):
                     ACTIVE_RMS_gestures[i_ges][i_try][i_win][i_ch]=(ACTIVE_RMS_gestures[i_ges][i_try][i_win][i_ch]-Mean)/delta
     return ACTIVE_RMS_gestures
 
+def segment_windowing(X, N=3):
+    init_try=1
+    for segments in X:
+        channels=np.array(segments).transpose()
+        chs_windows=np.array([])
+        init_ch=1
+        for channel in channels:
+            ch_windows=np.array([])
+            for i in range(N):
+                ch_windows=np.append(ch_windows, [compute_RMS(channel[(len(channel)//N)*i:(len(channel)//N)*(i+1)])])
+            if init_ch==1: 
+                chs_windows=np.array([ch_windows])
+                init_ch=0
+                continue
+            chs_windows=np.append(chs_windows, [ch_windows], axis=0)
+        if init_try==1:
+            X_N=np.array([chs_windows.transpose()])
+            init_try=0
+            continue
+        X_N=np.append(X_N, [chs_windows.transpose()], axis=0)
+    teturn X_N
+        
+
 def check(x):
     print("length: ", len(x))
     print("type: ", type(x))
-    #print("shape: ", x.shape)
+    print("shape: ", x.shape)
     raise ValueError("-------------WORKING LINE--------------")
 
 def check_segment_len(ACTIVE_RMS_gestures):
@@ -199,6 +222,8 @@ def main():
     mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
     # Naive Bayes classifier
     X = np.reshape(mean_normalized_RMS, -1)
+    X_3 = segment_windowing(X,3)
+    X_1 = segment_windowing(X,1)
     y=[]
     for i_ges in range(len(mean_normalized_RMS)):
         y.extend([i_ges for i_try in range(len(mean_normalized_RMS[i_ges]))])
