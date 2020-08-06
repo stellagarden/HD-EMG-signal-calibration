@@ -12,6 +12,8 @@ from sklearn.datasets import make_blobs
 WINDOW_SIZE = 150    # 20:9.76ms, 150:73.2ms
 TEST_RATIO = 0.3
 SEGMENT_N = 3
+PLOT_SCATTERED_DATA = True
+PLOT_CONFUSION_MATRIX = True
 
 def load_mat_files(dataDir):
     mats = []
@@ -253,12 +255,14 @@ def main():
     X = segment_windowing(mean_normalized_RMS,SEGMENT_N)
     y=construct_label(mean_normalized_RMS)
     kinds=[i_ges for i_ges in range(mean_normalized_RMS.shape[0])]
-#    plot_scattered_data(X, y)      # Plot X,y
+    if PLOT_SCATTERED_DATA:
+        plot_scattered_data(X, y)
     # Naive Bayes classifier : Basic method : NOT LOOCV
     gnb = GaussianNB()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_RATIO, random_state=0)
     y_pred = gnb.fit(X_train, y_train).predict(X_test)
     print("Number of mislabeled prediction out of a total %d prediction : %d" % (X_test.shape[0], (y_test != y_pred).sum()))
-    plot_confusion_matrix(y_test, kinds, y_pred)    # Plot confusion matrix
+    if PLOT_CONFUSION_MATRIX:
+        plot_confusion_matrix(y_test, kinds, y_pred)
     
 main()
