@@ -11,6 +11,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.datasets import make_blobs
 WINDOW_SIZE = 150    # 20:9.76ms, 150:73.2ms
 TEST_RATIO = 0.2
+SEGMENT_N = 3
 
 def load_mat_files(dataDir):
     mats = []
@@ -178,8 +179,8 @@ def segment_windowing(mean_normalized_RMS, N=3):
             init_ges=0
             continue
         ges_windows=np.append(ges_windows, [tries_windows], axis=0)
-    return ges_windows
-
+    return np.reshape(ges_windows, (ges_windows.shape[0]*ges_windows.shape[1], ges_windows.shape[2]*ges_windows.shape[3]))
+     
 def construct_label(mean_normalized_RMS):
     y=np.array([])
     for i_ges in range(len(mean_normalized_RMS)):
@@ -246,8 +247,7 @@ def main():
     # Feature extraction : Mean normalization for all channels in each window
     mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
     # Naive Bayes classifier : Construct X and y
-    X_gestures_N_3 = segment_windowing(mean_normalized_RMS,3)
-    X_3 = np.reshape(X_gestures_N_3, (X_gestures_N_3.shape[0]*X_gestures_N_3.shape[1], X_gestures_N_3.shape[2]*X_gestures_N_3.shape[3]))    
+    X = segment_windowing(mean_normalized_RMS,SEGMENT_N)
     y=construct_label(mean_normalized_RMS)
     kinds=[str(i_ges) for i_ges in range(mean_normalized_RMS.shape[0])]
     # Naive Bayes classifier : Basic method NOT LOOCV
