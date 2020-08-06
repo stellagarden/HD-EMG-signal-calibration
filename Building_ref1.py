@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from scipy import io
 from scipy.signal import butter, lfilter, freqz
 from statistics import median
-from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 
@@ -232,14 +231,20 @@ def main():
     ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures.tolist())
     # Feature extraction : Mean normalization for all channels in each window
     mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
-    # Naive Bayes classifier
+    # Naive Bayes classifier : Construct X and y
     X_gestures_N_1 = segment_windowing(mean_normalized_RMS,1)
     X_gestures_N_3 = segment_windowing(mean_normalized_RMS,3)
     y=construct_label(mean_normalized_RMS)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0)
+    # Naive Bayes classifier : Basic method NOT LOOCV
     gnb = GaussianNB()
-    y_pred = gnb.fit(X_train, y_train).predict(X_test)
-    print("Number of mislabeled points out of a total %d points : %d" % (X_test.shape[0], (y_test != y_pred).sum()))
+    X_1 = np.reshape(X_gestures_N_1, (X_gestures_N_1.shape[0]*X_gestures_N_1.shape[1], X_gestures_N_1.shape[2]*X_gestures_N_1.shape[3]))
+    X_3 = np.reshape(X_gestures_N_3, (X_gestures_N_3.shape[0]*X_gestures_N_3.shape[1], X_gestures_N_3.shape[2]*X_gestures_N_3.shape[3]))    
+    X_1_train, X_1_test, y_1_train, y_1_test = train_test_split(X_1, y, test_size=0.5, random_state=0)
+    X_3_train, X_3_test, y_3_train, y_3_test = train_test_split(X_3, y, test_size=0.5, random_state=0)
+    y_1_pred = gnb.fit(X_1_train, y_1_train).predict(X_1_test)
+    y_3_pred = gnb.fit(X_3_train, y_3_train).predict(X_3_test)
+    print("N=1 : Number of mislabeled points out of a total %d points : %d" % (X_1_test.shape[0], (y_1_test != y_1_pred).sum()))
+    print("N=3 : Number of mislabeled points out of a total %d points : %d" % (X_3_test.shape[0], (y_3_test != y_3_pred).sum()))
 
     
 main()
