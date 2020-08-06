@@ -11,6 +11,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.datasets import make_blobs
 WINDOW_SIZE = 150    # 20:9.76ms, 150:73.2ms
 TEST_RATIO = 0.3
+CLASSIFYING_METHOD = 2  # 1 or 2
 SEGMENT_N = 3
 PLOT_SCATTERED_DATA = True
 PLOT_CONFUSION_MATRIX = True
@@ -154,12 +155,12 @@ def mean_normalization(ACTIVE_RMS_gestures):
                     ACTIVE_RMS_gestures[i_ges][i_try][i_win][i_ch]=(ACTIVE_RMS_gestures[i_ges][i_try][i_win][i_ch]-Mean)/delta
     return ACTIVE_RMS_gestures
 
-def segment_windowing(mean_normalized_RMS, N=3):
-    init_ges=1
-    for gesture in mean_normalized_RMS:
+def segment_windowing(mean_normalized_RMS,CLASSIFYING_METHOD,N=3):
+    gesture_flattened = np.reshape(mean_normalized_RMS, -1)
+    if CLASSIFYING_METHOD==1:
         init_try=1
-        for segments in gesture:
-            channels=np.array(segments).transpose()
+        for segment in gesture_flattened:
+            channels=np.array(segment).transpose()
             chs_windows=np.array([])
             init_ch=1
             for channel in channels:
@@ -176,18 +177,28 @@ def segment_windowing(mean_normalized_RMS, N=3):
                 init_try=0
                 continue
             tries_windows=np.append(tries_windows, [chs_windows.transpose()], axis=0)
-        if init_ges==1:
-            ges_windows=np.array([tries_windows])
-            init_ges=0
-            continue
-        ges_windows=np.append(ges_windows, [tries_windows], axis=0)
-    return np.reshape(ges_windows, (ges_windows.shape[0]*ges_windows.shape[1], ges_windows.shape[2]*ges_windows.shape[3]))
-     
-def construct_label(mean_normalized_RMS):
+        X=np.reshape(tries_windows, (tries_windows.shape[0],tries_windows.shape[1]*tries_windows.shape[2]))
+    elif CLASSIFYING_METHOD==2:
+        init_try=1
+        for segment in gesture_flattened:
+            if init_try==1:
+                X=np.array(np.array(segment))
+                init_try=0
+                continue
+            X=np.append(X, np.array(segment), axis=0)
+    else: raise ValueError("CLASSIFYING_METHOD only can be 1 or 2")
+    return X, construct_label(mean_normalized_RMS,CLASSIFYING_METHOD)
+
+def construct_label(mean_normalized_RMS,CLASSIFYING_METHOD):
     y=np.array([])
+    if CLASSIFYING_METHOD==1:
+        cycle=len(mean_normalized_RMS.shape[1])
+    elif CLASSIFYING_METHOD==2:
+        ###################### Define cycle ##################################
+        cycle=len(mean_normalized_RMS.shape[1]*mean_normalized_RMS.shape[1])
     for i_ges in range(len(mean_normalized_RMS)):
-        y=np.append(y, [i_ges for i_try in range(len(mean_normalized_RMS[i_ges]))])
-    return y 
+        y=np.append(y, [i_ges for i_try in range(cycle)])
+    return y
 
 def plot_confusion_matrix(y_test, kinds, y_pred):
     mat = confusion_matrix(y_test, y_pred)
@@ -252,8 +263,7 @@ def main():
     # Feature extraction : Mean normalization for all channels in each window
     mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
     # Naive Bayes classifier : Construct X and y
-    X = segment_windowing(mean_normalized_RMS,SEGMENT_N)
-    y=construct_label(mean_normalized_RMS)
+    X, y = segment_windowing(mean_normalized_RMS,CLASSIFYING_METHOD,SEGMENT_N)
     kinds=[i_ges for i_ges in range(mean_normalized_RMS.shape[0])]
     if PLOT_SCATTERED_DATA:
         plot_scattered_data(X, y)
