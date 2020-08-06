@@ -10,7 +10,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import confusion_matrix
 from sklearn.datasets import make_blobs
 WINDOW_SIZE = 150    # 20:9.76ms, 150:73.2ms
-TEST_RATIO = 0.2
+TEST_RATIO = 0.3
 SEGMENT_N = 3
 
 def load_mat_files(dataDir):
@@ -187,13 +187,16 @@ def construct_label(mean_normalized_RMS):
         y=np.append(y, [i_ges for i_try in range(len(mean_normalized_RMS[i_ges]))])
     return y 
 
-def plot_confusion_matrix(y_3_test, kinds, y_3_pred):
-    mat = confusion_matrix(y_3_test, y_3_pred)
-    sns.heatmap(mat.T, vmin=-0.5, square=True, annot=True, fmt='d', cbar=False,
-                xticklabels=kinds, yticklabels=kinds)
+def plot_confusion_matrix(y_test, kinds, y_pred):
+    mat = confusion_matrix(y_test, y_pred)
+    sns.heatmap(mat.T, square=True, annot=True, fmt='d', cbar=False, xticklabels=kinds, yticklabels=kinds)
     plt.xlabel('true label')
     plt.ylabel('predicted label')
     plt.axis('auto')
+    plt.show()
+
+def plot_scattered_data(X, y):
+    plt.scatter(X[:, 0], X[:, 1], c=y, s=50, cmap='RdBu')
     plt.show()
 
 def check(x):
@@ -249,14 +252,13 @@ def main():
     # Naive Bayes classifier : Construct X and y
     X = segment_windowing(mean_normalized_RMS,SEGMENT_N)
     y=construct_label(mean_normalized_RMS)
-    kinds=[str(i_ges) for i_ges in range(mean_normalized_RMS.shape[0])]
-    # Naive Bayes classifier : Basic method NOT LOOCV
+    kinds=[i_ges for i_ges in range(mean_normalized_RMS.shape[0])]
+#    plot_scattered_data(X, y)      # Plot X,y
+    # Naive Bayes classifier : Basic method : NOT LOOCV
     gnb = GaussianNB()
-    plt.scatter(X[:, 0], X[:, 1], c=y, s=50, cmap='RdBu')
-    plt.show()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_RATIO, random_state=0)
     y_pred = gnb.fit(X_train, y_train).predict(X_test)
-    print("Number of mislabeled points out of a total %d points : %d" % (X_test.shape[0], (y_test != y_pred).sum()))
-    plot_confusion_matrix(y_test, kinds, y_pred)
+    print("Number of mislabeled prediction out of a total %d prediction : %d" % (X_test.shape[0], (y_test != y_pred).sum()))
+    plot_confusion_matrix(y_test, kinds, y_pred)    # Plot confusion matrix
     
 main()
