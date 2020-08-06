@@ -252,18 +252,11 @@ def main():
     kinds=[str(i_ges) for i_ges in range(mean_normalized_RMS.shape[0])]
     # Naive Bayes classifier : Basic method NOT LOOCV
     gnb = GaussianNB()
-    plt.scatter(X_3[:, 0], X_3[:, 1], c=y, s=50, cmap='RdBu')
+    plt.scatter(X[:, 0], X[:, 1], c=y, s=50, cmap='RdBu')
     plt.show()
-    X_3_train, X_3_test, y_3_train, y_3_test = train_test_split(X_3, y, test_size=TEST_RATIO, random_state=0)
-    y_3_pred = gnb.fit(X_3_train, y_3_train).predict(X_3_test)
-    print("Number of mislabeled points out of a total %d points : %d" % (X_3_test.shape[0], (y_3_test != y_3_pred).sum()))
-    plot_confusion_matrix(y_3_test, kinds, y_3_pred)
-
-#    X_gestures_N_1 = segment_windowing(mean_normalized_RMS,1)
-#    X_1 = np.reshape(X_gestures_N_1, (X_gestures_N_1.shape[0]*X_gestures_N_1.shape[1], X_gestures_N_1.shape[2]*X_gestures_N_1.shape[3]))
-#    X_1_train, X_1_test, y_1_train, y_1_test = train_test_split(X_1, y, test_size=0.5, random_state=0)
-#    y_1_pred = gnb.fit(X_1_train, y_1_train).predict(X_1_test)
-#    print("N=1 : Number of mislabeled points out of a total %d points : %d" % (X_1_test.shape[0], (y_1_test != y_1_pred).sum()))
-
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_RATIO, random_state=0)
+    y_pred = gnb.fit(X_train, y_train).predict(X_test)
+    print("Number of mislabeled points out of a total %d points : %d" % (X_test.shape[0], (y_test != y_pred).sum()))
+    plot_confusion_matrix(y_test, kinds, y_pred)
     
 main()
