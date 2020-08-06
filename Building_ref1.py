@@ -1,11 +1,14 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 from scipy import io
 from scipy.signal import butter, lfilter, freqz
 from statistics import median
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import confusion_matrix
+WINDOW_SIZE = 20    # 9.76ms
 
 def load_mat_files(dataDir):
     mats = []
@@ -34,7 +37,7 @@ def plot_bandpass_filtered_data(data):
     plt.legend(loc='upper left')
     plt.show()
 
-def divide_to_windows(datas, window_size=150):
+def divide_to_windows(datas, window_size=WINDOW_SIZE):
     windows=np.delete(datas, list(range((len(datas)//window_size)*window_size,len(datas))))
     windows=np.reshape(windows,((len(datas)//window_size,window_size)))
     return windows
@@ -181,6 +184,13 @@ def construct_label(mean_normalized_RMS):
         y=np.append(y, [i_ges for i_try in range(len(mean_normalized_RMS[i_ges]))])
     return y 
 
+def plot_confusion_matrix(kinds, y_3_pred):
+    mat = confusion_matrix(kinds, y_3_pred)
+    sns.heatmap(mat.T, square=True, annot=True, fmt='d', cbar=False,
+                xticklabels=kinds, yticklabels=kinds)
+    plt.xlabel('true label')
+    plt.ylabel('predicted label')
+
 def check(x):
     print("length: ", len(x))
     print("type: ", type(x))
@@ -235,6 +245,7 @@ def main():
     X_gestures_N_1 = segment_windowing(mean_normalized_RMS,1)
     X_gestures_N_3 = segment_windowing(mean_normalized_RMS,3)
     y=construct_label(mean_normalized_RMS)
+    kinds=[i_ges for i_ges in range(mean_normalized_RMS.shape[0])]
     # Naive Bayes classifier : Basic method NOT LOOCV
     gnb = GaussianNB()
     X_1 = np.reshape(X_gestures_N_1, (X_gestures_N_1.shape[0]*X_gestures_N_1.shape[1], X_gestures_N_1.shape[2]*X_gestures_N_1.shape[3]))
@@ -243,8 +254,9 @@ def main():
     X_3_train, X_3_test, y_3_train, y_3_test = train_test_split(X_3, y, test_size=0.5, random_state=0)
     y_1_pred = gnb.fit(X_1_train, y_1_train).predict(X_1_test)
     y_3_pred = gnb.fit(X_3_train, y_3_train).predict(X_3_test)
-    print("N=1 : Number of mislabeled points out of a total %d points : %d" % (X_1_test.shape[0], (y_1_test != y_1_pred).sum()))
-    print("N=3 : Number of mislabeled points out of a total %d points : %d" % (X_3_test.shape[0], (y_3_test != y_3_pred).sum()))
+    plot_confusion_matrix(kinds, y_3_pred)
+    #print("N=1 : Number of mislabeled points out of a total %d points : %d" % (X_1_test.shape[0], (y_1_test != y_1_pred).sum()))
+    #print("N=3 : Number of mislabeled points out of a total %d points : %d" % (X_3_test.shape[0], (y_3_test != y_3_pred).sum()))
 
     
 main()
