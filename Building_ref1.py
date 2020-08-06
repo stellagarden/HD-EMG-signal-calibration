@@ -8,7 +8,9 @@ from statistics import median
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import confusion_matrix
-WINDOW_SIZE = 20    # 9.76ms
+from sklearn.datasets import make_blobs
+WINDOW_SIZE = 150    # 20:9.76ms, 150:73.2ms
+TEST_RATIO = 0.2
 
 def load_mat_files(dataDir):
     mats = []
@@ -33,7 +35,7 @@ def plot_bandpass_filtered_data(data):
     plt.plot(y, label='Filtered signal')
     plt.xlabel('time (seconds)')
     plt.grid(True)
-    plt.axis('tight')
+    plt.axis()
     plt.legend(loc='upper left')
     plt.show()
 
@@ -184,12 +186,14 @@ def construct_label(mean_normalized_RMS):
         y=np.append(y, [i_ges for i_try in range(len(mean_normalized_RMS[i_ges]))])
     return y 
 
-def plot_confusion_matrix(kinds, y_3_pred):
-    mat = confusion_matrix(kinds, y_3_pred)
-    sns.heatmap(mat.T, square=True, annot=True, fmt='d', cbar=False,
+def plot_confusion_matrix(y_3_test, kinds, y_3_pred):
+    mat = confusion_matrix(y_3_test, y_3_pred)
+    sns.heatmap(mat.T, vmin=-0.5, square=True, annot=True, fmt='d', cbar=False,
                 xticklabels=kinds, yticklabels=kinds)
     plt.xlabel('true label')
     plt.ylabel('predicted label')
+    plt.axis('auto')
+    plt.show()
 
 def check(x):
     print("length: ", len(x))
@@ -242,21 +246,24 @@ def main():
     # Feature extraction : Mean normalization for all channels in each window
     mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
     # Naive Bayes classifier : Construct X and y
-    X_gestures_N_1 = segment_windowing(mean_normalized_RMS,1)
     X_gestures_N_3 = segment_windowing(mean_normalized_RMS,3)
+    X_3 = np.reshape(X_gestures_N_3, (X_gestures_N_3.shape[0]*X_gestures_N_3.shape[1], X_gestures_N_3.shape[2]*X_gestures_N_3.shape[3]))    
     y=construct_label(mean_normalized_RMS)
-    kinds=[i_ges for i_ges in range(mean_normalized_RMS.shape[0])]
+    kinds=[str(i_ges) for i_ges in range(mean_normalized_RMS.shape[0])]
     # Naive Bayes classifier : Basic method NOT LOOCV
     gnb = GaussianNB()
-    X_1 = np.reshape(X_gestures_N_1, (X_gestures_N_1.shape[0]*X_gestures_N_1.shape[1], X_gestures_N_1.shape[2]*X_gestures_N_1.shape[3]))
-    X_3 = np.reshape(X_gestures_N_3, (X_gestures_N_3.shape[0]*X_gestures_N_3.shape[1], X_gestures_N_3.shape[2]*X_gestures_N_3.shape[3]))    
-    X_1_train, X_1_test, y_1_train, y_1_test = train_test_split(X_1, y, test_size=0.5, random_state=0)
-    X_3_train, X_3_test, y_3_train, y_3_test = train_test_split(X_3, y, test_size=0.5, random_state=0)
-    y_1_pred = gnb.fit(X_1_train, y_1_train).predict(X_1_test)
+    plt.scatter(X_3[:, 0], X_3[:, 1], c=y, s=50, cmap='RdBu')
+    plt.show()
+    X_3_train, X_3_test, y_3_train, y_3_test = train_test_split(X_3, y, test_size=TEST_RATIO, random_state=0)
     y_3_pred = gnb.fit(X_3_train, y_3_train).predict(X_3_test)
-    plot_confusion_matrix(kinds, y_3_pred)
-    #print("N=1 : Number of mislabeled points out of a total %d points : %d" % (X_1_test.shape[0], (y_1_test != y_1_pred).sum()))
-    #print("N=3 : Number of mislabeled points out of a total %d points : %d" % (X_3_test.shape[0], (y_3_test != y_3_pred).sum()))
+    print("Number of mislabeled points out of a total %d points : %d" % (X_3_test.shape[0], (y_3_test != y_3_pred).sum()))
+    plot_confusion_matrix(y_3_test, kinds, y_3_pred)
+
+#    X_gestures_N_1 = segment_windowing(mean_normalized_RMS,1)
+#    X_1 = np.reshape(X_gestures_N_1, (X_gestures_N_1.shape[0]*X_gestures_N_1.shape[1], X_gestures_N_1.shape[2]*X_gestures_N_1.shape[3]))
+#    X_1_train, X_1_test, y_1_train, y_1_test = train_test_split(X_1, y, test_size=0.5, random_state=0)
+#    y_1_pred = gnb.fit(X_1_train, y_1_train).predict(X_1_test)
+#    print("N=1 : Number of mislabeled points out of a total %d points : %d" % (X_1_test.shape[0], (y_1_test != y_1_pred).sum()))
 
     
 main()
