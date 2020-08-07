@@ -192,12 +192,12 @@ def segment_windowing(mean_normalized_RMS,CLASSIFYING_METHOD,N=3):
 def construct_label(mean_normalized_RMS,CLASSIFYING_METHOD):
     y=np.array([])
     if CLASSIFYING_METHOD==1:
-        cycle=len(mean_normalized_RMS.shape[1])
+        for i_ges in range(len(mean_normalized_RMS)):
+            y=np.append(y, [i_ges for i_try in range(mean_normalized_RMS.shape[1])])
     elif CLASSIFYING_METHOD==2:
-        ###################### Define cycle ##################################
-        cycle=len(mean_normalized_RMS.shape[1]*mean_normalized_RMS.shape[1])
-    for i_ges in range(len(mean_normalized_RMS)):
-        y=np.append(y, [i_ges for i_try in range(cycle)])
+        for i_ges in range(mean_normalized_RMS.shape[0]):
+            for i_try in range(mean_normalized_RMS.shape[1]):
+                y=np.append(y, [i_ges for i_win in range(len(mean_normalized_RMS[i_ges][i_try]))])    
     return y
 
 def plot_confusion_matrix(y_test, kinds, y_pred):
