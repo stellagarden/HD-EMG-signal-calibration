@@ -14,7 +14,7 @@ TEST_RATIO = 0.3
 CLASSIFYING_METHOD = 2  # 1 or 2
 SEGMENT_N = 3
 PLOT_SCATTERED_DATA = True
-PLOT_CONFUSION_MATRIX = True
+PLOT_CONFUSION_MATRIX = False
 
 def load_mat_files(dataDir):
     mats = []
@@ -208,6 +208,7 @@ def plot_confusion_matrix(y_test, kinds, y_pred):
     plt.axis('auto')
     plt.show()
 
+################## EDIT SCATTERED DATA PLOTTING ####################
 def plot_scattered_data(X, y):
     plt.scatter(X[:, 0], X[:, 1], c=y, s=50, cmap='RdBu')
     plt.show()
@@ -265,12 +266,12 @@ def main():
     # Naive Bayes classifier : Construct X and y
     X, y = segment_windowing(mean_normalized_RMS,CLASSIFYING_METHOD,SEGMENT_N)
     kinds=[i_ges for i_ges in range(mean_normalized_RMS.shape[0])]
-    if PLOT_SCATTERED_DATA:
-        plot_scattered_data(X, y)
     # Naive Bayes classifier : Basic method : NOT LOOCV
     gnb = GaussianNB()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_RATIO, random_state=0)
     y_pred = gnb.fit(X_train, y_train).predict(X_test)
+    if PLOT_SCATTERED_DATA:
+        plot_scattered_data(X_test, y_pred)
     print("Number of mislabeled prediction out of a total %d prediction : %d" % (X_test.shape[0], (y_test != y_pred).sum()))
     if PLOT_CONFUSION_MATRIX:
         plot_confusion_matrix(y_test, kinds, y_pred)
