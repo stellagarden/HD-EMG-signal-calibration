@@ -132,10 +132,11 @@ def ACTIVE_filter(RMS_gestures):
                         contiguous=0
             seg_start, seg_len = sorted(segs, key=lambda seg: seg[1], reverse=True)[0]
             # Segmentation : Determine whether ACTIVE : delete if the window is not ACTIVE
+            RMS_gestures_list=RMS_gestures.tolist()
             for i_win in reversed(range(len(RMS_gestures[i_ges][i_try]))):
                 if not i_win in range(seg_start, seg_start+seg_len):
-                    del RMS_gestures[i_ges][i_try][i_win]
-    return RMS_gestures
+                    del RMS_gestures_list[i_ges][i_try][i_win]
+    return np.array(RMS_gestures_list)
 
 def medfilt(channel, kernel_size=3):
     filtered=np.zeros(len(channel))
@@ -151,6 +152,10 @@ def mean_normalization(ACTIVE_RMS_gestures):
             for i_win in range(len(ACTIVE_RMS_gestures[i_ges][i_try])):
                 delta=max(ACTIVE_RMS_gestures[i_ges][i_try][i_win])-min(ACTIVE_RMS_gestures[i_ges][i_try][i_win])
                 Mean=np.mean(ACTIVE_RMS_gestures[i_ges][i_try][i_win])
+                if delta==0:
+                    print("Delta", i_ges, i_try, i_win)
+                if Mean==0:
+                    print("Mean", i_ges, i_try, i_win)
                 for i_ch in range(len(ACTIVE_RMS_gestures[i_ges][i_try][i_win])):
                     ACTIVE_RMS_gestures[i_ges][i_try][i_win][i_ch]=(ACTIVE_RMS_gestures[i_ges][i_try][i_win][i_ch]-Mean)/delta
     return ACTIVE_RMS_gestures
@@ -259,9 +264,10 @@ def main():
                 channels[i_ch]=medfilt(channels[i_ch])
             RMS_gestures[i_ges][i_try]=channels.transpose()
     # Segmentation : Dertermine which window is ACTIVE
-    ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures.tolist())
+    ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures)     # ACTIVE_RMS_gestures : (4,10) ndarray with lists in it.
     # Feature extraction : Mean normalization for all channels in each window
-    mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
+    mean_normalized_RMS=mean_normalization(ACTIVE_RMS_gestures)
+    check(mean_normalized_RMS)
     # Naive Bayes classifier : Construct X and y
     X, y = segment_windowing(mean_normalized_RMS,CLASSIFYING_METHOD,SEGMENT_N)
     kinds=[i_ges for i_ges in range(mean_normalized_RMS.shape[0])]
