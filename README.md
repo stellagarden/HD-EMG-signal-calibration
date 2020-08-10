@@ -1,4 +1,4 @@
-# 2020_Summer_Individual_study
+# 2020_Summer_Individual_study [Working on ReadMe]
 
 ## Notion link
 [개별연구 SubNote](https://www.notion.so/SubNote-c44b5edc2bce4f158651a44a88177dc6)
