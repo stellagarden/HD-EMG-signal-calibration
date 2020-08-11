@@ -2,11 +2,11 @@
 
 ## Notion
 
-| .                    | .                                                                                    |
-| -------------------- | ------------------------------------------------------------------------------------ |
-| Notion Link          | [Individual SubNote](https://www.notion.so/SubNote-c44b5edc2bce4f158651a44a88177dc6) |
-| Consists of          | Ref 1 summary, Ref 3 summary (lite), Programming timeline                            |
-| Programming Timeline | 2020.08.11 version attached                                                          |
+| .             | .                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------ |
+| Notion Link   | [Individual SubNote](https://www.notion.so/SubNote-c44b5edc2bce4f158651a44a88177dc6) |
+| Consists of   | Ref 1 summary, Ref 3 summary (lite), Programming timeline                            |
+| Attached here | Programming tineline (2020.08.11 ver.)                                               |
 
 - - -
 
@@ -16,7 +16,7 @@
 
 ### Method 1
 This method follows the reference 1.
-> There will be various number of segments in each try, since active time will be different for every try. 
+> There will be various number of segments in each try, since active time will be different for every try. First, we'll make some groups of segments. Let there are M segments in this try, and we set N=n.
 
 Calculate RMS values in each try for each channel. 
 > Ex) We have "2 segments" consist of "m, n active windows", and "N=3".    
