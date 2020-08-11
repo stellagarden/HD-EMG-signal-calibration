@@ -229,7 +229,7 @@ def check_segment_len(ACTIVE_RMS_gestures):
 
 def main():
     #loading .mat files consist of 0,1,2,3(,11,17,18,21,23,24,25 not for light) gestures
-    gestures = load_mat_files("../data/ref1_subject1_session1_light/")  # gestures : list
+    gestures = load_mat_files("/data ref1_subject1_session1_light/")  # gestures : list
     #In idle gesture, we just use 2,4,7,8,11,13,19,25,26,30th tries in order to match the number of datas
     gestures[0]=gestures[0][[1,3,6,7,10,12,18,24,25,29]]
     
