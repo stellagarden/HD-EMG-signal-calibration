@@ -1,4 +1,4 @@
-# 2020_Summer_Individual_study [Working on ReadMe]
+# 2020_Summer_Individual_study
 
 ## Notion
 
