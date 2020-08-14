@@ -74,9 +74,12 @@ def create_168_dimensional_window_vectors(channels):
         RMSwindows_per_channel=compute_RMS_for_each_windows(windows_per_channel)
         if i_ch==0:
             RMS_one_try=np.array(RMSwindows_per_channel)
+            rare_one_try=np.array(windows_per_channel)
             continue
         RMS_one_try=np.append(RMS_one_try, RMSwindows_per_channel, axis=1)  # Adding column
-    return RMS_one_try
+        rare_one_try=np.append(rare_one_try, windows_per_channel, axis=1)
+    check(rare_one_try)
+    return RMS_one_try, rare_one_try
 
 def average_for_channel(gesture):
     average=np.array([])
@@ -229,7 +232,7 @@ def check_segment_len(ACTIVE_RMS_gestures):
 
 def main():
     #loading .mat files consist of 0,1,2,3(,11,17,18,21,23,24,25 not for light) gestures
-    gestures = load_mat_files("/data ref1_subject1_session1_light/")  # gestures : list
+    gestures = load_mat_files("./data ref1_subject1_session1_light/")  # gestures : list
     #In idle gesture, we just use 2,4,7,8,11,13,19,25,26,30th tries in order to match the number of datas
     gestures[0]=gestures[0][[1,3,6,7,10,12,18,24,25,29]]
     
@@ -238,18 +241,22 @@ def main():
     for gesture in gestures:
         init_try=1
         for one_try in gesture:
-            RMS_one_try = create_168_dimensional_window_vectors(one_try[0]) # one_try[0] : channels, ndarray
+            RMS_one_try, rare_one_try = create_168_dimensional_window_vectors(one_try[0]) # one_try[0] : channels, ndarray
             if init_try == 1:
                 RMS_tries_for_gesture = np.array([RMS_one_try])
+                rare_tries_for_gesture = np.array([rare_one_try])
                 init_try=0
                 continue
             RMS_tries_for_gesture = np.append(RMS_tries_for_gesture, [RMS_one_try], axis=0) # Adding height
+            rare_tries_for_gesture = np.append(rare_tries_for_gesture, [rare_one_try], axis=0)
         if init_gesture==1:
             RMS_gestures = np.array([RMS_tries_for_gesture])
+            rare_gestures = np.array([rare_tries_for_gesture])
             init_gesture=0
             continue
         RMS_gestures = np.append(RMS_gestures, [RMS_tries_for_gesture], axis=0) # Adding blocks
-
+        rare_gestures = np.append(rare_gestures, [rare_tries_for_gesture], axis=0)
+    ######################### WORKING LINE ##########################
     # Segmentation : Data processing : Base normalization
     RMS_gestures=base_normalization(RMS_gestures)
     # Segmentation : Data processing : Median filtering

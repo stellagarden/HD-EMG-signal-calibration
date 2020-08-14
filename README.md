@@ -11,7 +11,8 @@
 <br>
 
 ## Data processing method
-  Before processing, the data is organized like the picture below.
+############################# NEED TO BE RECTIED ##################################
+Before processing, the RMS data is organized like the picture below.
 ![Before](/results/illust-data_structure.png)
 There are various number of segments in each try, since active time is different for every try. Therefore, we'll make some **groups** for segments first. Suppose that we set N=n and there are M segments in some try. This means we want to make **n groups with M segments**.   
 From 0th to (M/n\*1)-1th segments will grouped into one group. Similarly, from (M/n\*1)th to (M/n\*2)-1th segments will grouped, and so on. The remainings are ignored.   
