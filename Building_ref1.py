@@ -49,7 +49,7 @@ def divide_to_windows(datas, window_size=WINDOW_SIZE):
     return windows
 
 def compute_RMS(datas):
-    return np.sqrt(np.mean(datas**2))
+    return np.sqrt(np.mean(np.array(datas)**2))
 
 def compute_RMS_gestures(gestures):
     RMS_gestures=np.array([[[[0.0 for i_ch in range(gestures.shape[3])] for i_win in range(gestures.shape[2])] for i_try in range(gestures.shape[1])] for i_ges in range(gestures.shape[0])])
@@ -157,19 +157,23 @@ def ACTIVE_filter(i_ACTIVE_windows, pre_processed_gestures):
                     del list_pre_processed_gestures[i_ges][i_try][i_win]
     return np.array(list_pre_processed_gestures)
 
-def Partitioing_N_Compute_RMS(ACTIVE_pre_processed_gestures, N=SEGMENT_N):
-    # Partitioning into N large windows : Delete remainings
+def Repartition_N_Compute_RMS(ACTIVE_pre_processed_gestures, N=SEGMENT_N):
+    # Repartitioning into N large windows : list all the data of each channel without partitioning into windows
+    ACTIVE_N_gestures=[[[[] for i_ch in range(len(ACTIVE_pre_processed_gestures[0][0][0]))] for i_try in range(ACTIVE_pre_processed_gestures.shape[1])] for i_ges in range(ACTIVE_pre_processed_gestures.shape[0])]     # CONSTANT
     for i_ges in range(len(ACTIVE_pre_processed_gestures)):
         for i_try in range(len(ACTIVE_pre_processed_gestures[i_ges])):
-            if len(ACTIVE_pre_processed_gestures[i_ges][i_try])%N==0:
-                continue
-            del ACTIVE_pre_processed_gestures[i_ges][i_try][(len(ACTIVE_pre_processed_gestures[i_ges][i_try])%N)*(-1):]
-    # Partitioning into N large windows
-    for gesture in ACTIVE_pre_processed_gestures:
-        for one_try in gesture:
-            for channel 
-    for i in range(N):
-        compute_RMS(channel[(len(channel)//N)*i:(len(channel)//N)*(i+1)])
+            for i_seg in range(len(ACTIVE_pre_processed_gestures[i_ges][i_try])):
+                for i_ch in range(len(ACTIVE_pre_processed_gestures[i_ges][i_try][i_seg])):
+                    ACTIVE_N_gestures[i_ges][i_try][i_ch].extend(ACTIVE_pre_processed_gestures[i_ges][i_try][i_seg][i_ch])
+    # Compute RMS in N large windows
+    for i_ges in range(len(ACTIVE_N_gestures)):
+        for i_try in range(len(ACTIVE_N_gestures[i_ges])):
+            for i_ch in range(len(ACTIVE_N_gestures[i_ges][i_try])):
+                RMSs=[]
+                for i  in range(N):
+                    RMSs.append(compute_RMS(ACTIVE_N_gestures[i_ges][i_try][i_ch][(len(ACTIVE_N_gestures[i_ges][i_try][i_ch])//N)*i:(len(ACTIVE_N_gestures[i_ges][i_try][i_ch])//N)*(i+1)]))
+                ACTIVE_N_gestures[i_ges][i_try][i_ch]=RMSs
+    return np.array(ACTIVE_N_gestures)
 
 def mean_normalization(ACTIVE_RMS_gestures):
     for i_ges in range(len(ACTIVE_RMS_gestures)):
@@ -253,7 +257,6 @@ def check_segment_len(ACTIVE_RMS_gestures):
             print(len(ACTIVE_RMS_gestures[i][j]), end=' ')
         print()
 
-
 def main():
     #loading .mat files consist of 0,1,2,3(,11,17,18,21,23,24,25 not for light) gestures
     gestures = load_mat_files("./data ref1_subject1_session1_light/")  # gestures : list
@@ -294,9 +297,9 @@ def main():
     # Feature extraction : Filter only ACTIVE windows
     ACTIVE_pre_processed_gestures=ACTIVE_filter(i_ACTIVE_windows, pre_processed_gestures)
     # Feature extraction : Partition existing windows into N large windows and compute RMS for each large window
-    ACTIVE_N_RMS_gestures=Partitioing_N_Compute_RMS(ACTIVE_pre_processed_gestures, SEGMENT_N)
+    ACTIVE_N_RMS_gestures=Repartition_N_Compute_RMS(ACTIVE_pre_processed_gestures, SEGMENT_N)
     # Feature extraction : Mean normalization for all channels in each window
-    mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
+    mean_normalized_RMS=mean_normalization(ACTIVE_N_RMS_gestures)
 
     # Naive Bayes classifier : Construct X and y
     X, y = segment_windowing(mean_normalized_RMS,CLASSIFYING_METHOD,SEGMENT_N)
