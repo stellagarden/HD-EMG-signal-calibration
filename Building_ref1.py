@@ -176,15 +176,15 @@ def Repartition_N_Compute_RMS(ACTIVE_pre_processed_gestures, N=SEGMENT_N):
             ACTIVE_N_gestures[i_ges][i_try]=np.array(ACTIVE_N_gestures[i_ges][i_try]).transpose()   # Change (4,10,168,N) -> (4,10,N,168)
     return np.array(ACTIVE_N_gestures)
 
-def mean_normalization(ACTIVE_RMS_gestures):
-    for i_ges in range(len(ACTIVE_RMS_gestures)):
-        for i_try in range(len(ACTIVE_RMS_gestures[i_ges])):
-            for i_win in range(len(ACTIVE_RMS_gestures[i_ges][i_try])):
-                delta=max(ACTIVE_RMS_gestures[i_ges][i_try][i_win])-min(ACTIVE_RMS_gestures[i_ges][i_try][i_win])
-                Mean=np.mean(ACTIVE_RMS_gestures[i_ges][i_try][i_win])
-                for i_ch in range(len(ACTIVE_RMS_gestures[i_ges][i_try][i_win])):
-                    ACTIVE_RMS_gestures[i_ges][i_try][i_win][i_ch]=(ACTIVE_RMS_gestures[i_ges][i_try][i_win][i_ch]-Mean)/delta
-    return ACTIVE_RMS_gestures
+def mean_normalization(ACTIVE_N_RMS_gestures):
+    for i_ges in range(len(ACTIVE_N_RMS_gestures)):
+        for i_try in range(len(ACTIVE_N_RMS_gestures[i_ges])):
+            for i_Lwin in range(len(ACTIVE_N_RMS_gestures[i_ges][i_try])):
+                delta=max(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin])-min(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin])
+                Mean=np.mean(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin])
+                for i_ch in range(len(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin])):
+                    ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin][i_ch]=(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin][i_ch]-Mean)/delta
+    return ACTIVE_N_RMS_gestures
 
 def segment_windowing(mean_normalized_RMS,CLASSIFYING_METHOD,N=3):
     gesture_flattened = np.reshape(mean_normalized_RMS, -1)
