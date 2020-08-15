@@ -148,7 +148,7 @@ def medfilt(channel, kernel_size=3):
     return filtered
 
 def ACTIVE_filter_Partition_N(i_ACTIVE_windows, pre_processed_gestures):
-    return pre_processed_gestures
+    
 
 def mean_normalization(ACTIVE_RMS_gestures):
     for i_ges in range(len(ACTIVE_RMS_gestures)):
@@ -269,7 +269,7 @@ def main():
             RMS_gestures[i_ges][i_try]=channels.transpose()
     # Segmentation : Dertermine which window is ACTIVE
     i_ACTIVE_windows=extract_ACTIVE_window_i(RMS_gestures.tolist())
-    
+
     # Feature extraction : Filter only ACTIVE windows and partition it into N large windows
     ACTIVE_RMS_gestures=ACTIVE_filter_Partition_N(i_ACTIVE_windows, pre_processed_gestures)
     # Feature extraction : Mean normalization for all channels in each window
