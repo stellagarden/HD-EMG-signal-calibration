@@ -158,7 +158,7 @@ def ACTIVE_filter(i_ACTIVE_windows, pre_processed_gestures):
     return np.array(list_pre_processed_gestures)
 
 def Repartition_N_Compute_RMS(ACTIVE_pre_processed_gestures, N=SEGMENT_N):
-    # Repartitioning into N large windows : list all the data of each channel without partitioning into windows
+    # List all the data of each channel without partitioning into windows
     ACTIVE_N_gestures=[[[[] for i_ch in range(len(ACTIVE_pre_processed_gestures[0][0][0]))] for i_try in range(ACTIVE_pre_processed_gestures.shape[1])] for i_ges in range(ACTIVE_pre_processed_gestures.shape[0])]     # CONSTANT
     for i_ges in range(len(ACTIVE_pre_processed_gestures)):
         for i_try in range(len(ACTIVE_pre_processed_gestures[i_ges])):
@@ -172,7 +172,8 @@ def Repartition_N_Compute_RMS(ACTIVE_pre_processed_gestures, N=SEGMENT_N):
                 RMSs=[]
                 for i  in range(N):
                     RMSs.append(compute_RMS(ACTIVE_N_gestures[i_ges][i_try][i_ch][(len(ACTIVE_N_gestures[i_ges][i_try][i_ch])//N)*i:(len(ACTIVE_N_gestures[i_ges][i_try][i_ch])//N)*(i+1)]))
-                ACTIVE_N_gestures[i_ges][i_try][i_ch]=RMSs
+                ACTIVE_N_gestures[i_ges][i_try][i_ch]=np.array(RMSs)
+            ACTIVE_N_gestures[i_ges][i_try]=np.array(ACTIVE_N_gestures[i_ges][i_try]).transpose()   # Change (4,10,168,N) -> (4,10,N,168)
     return np.array(ACTIVE_N_gestures)
 
 def mean_normalization(ACTIVE_RMS_gestures):
