@@ -157,8 +157,19 @@ def ACTIVE_filter(i_ACTIVE_windows, pre_processed_gestures):
                     del list_pre_processed_gestures[i_ges][i_try][i_win]
     return np.array(list_pre_processed_gestures)
 
-def Partitioing_N(ACTIVE_RMS_gestures):
-    return
+def Partitioing_N_Compute_RMS(ACTIVE_pre_processed_gestures, N=SEGMENT_N):
+    # Partitioning into N large windows : Delete remainings
+    for i_ges in range(len(ACTIVE_pre_processed_gestures)):
+        for i_try in range(len(ACTIVE_pre_processed_gestures[i_ges])):
+            if len(ACTIVE_pre_processed_gestures[i_ges][i_try])%N==0:
+                continue
+            del ACTIVE_pre_processed_gestures[i_ges][i_try][(len(ACTIVE_pre_processed_gestures[i_ges][i_try])%N)*(-1):]
+    # Partitioning into N large windows
+    for gesture in ACTIVE_pre_processed_gestures:
+        for one_try in gesture:
+            for channel 
+    for i in range(N):
+        compute_RMS(channel[(len(channel)//N)*i:(len(channel)//N)*(i+1)])
 
 def mean_normalization(ACTIVE_RMS_gestures):
     for i_ges in range(len(ACTIVE_RMS_gestures)):
@@ -228,11 +239,11 @@ def plot_scattered_data(X, y):
     plt.scatter(X[:, 0], X[:, 1], c=y, s=50, cmap='RdBu')
     plt.show()
 
-def check(x):
+def check(x, prin=0):
     print("length: ", len(x))
     print("type: ", type(x))
     print("shape: ", x.shape)
-    print(x)
+    if prin==1: print(x)
     raise ValueError("-------------WORKING LINE--------------")
 
 def check_segment_len(ACTIVE_RMS_gestures):
@@ -281,9 +292,9 @@ def main():
     i_ACTIVE_windows=extract_ACTIVE_window_i(RMS_gestures.tolist())
 
     # Feature extraction : Filter only ACTIVE windows
-    ACTIVE_RMS_gestures=ACTIVE_filter(i_ACTIVE_windows, pre_processed_gestures)
-    # Feature extraction : Partition existing windows into N large windows
-    ACTIVE_N_RMS_gestures=Partitioing_N(ACTIVE_RMS_gestures)
+    ACTIVE_pre_processed_gestures=ACTIVE_filter(i_ACTIVE_windows, pre_processed_gestures)
+    # Feature extraction : Partition existing windows into N large windows and compute RMS for each large window
+    ACTIVE_N_RMS_gestures=Partitioing_N_Compute_RMS(ACTIVE_pre_processed_gestures, SEGMENT_N)
     # Feature extraction : Mean normalization for all channels in each window
     mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
 
