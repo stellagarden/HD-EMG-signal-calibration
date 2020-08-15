@@ -147,8 +147,15 @@ def medfilt(channel, kernel_size=3):
         filtered[i]=median([channel[j] for j in range(i-kernel_size//2, i+kernel_size//2+1)])
     return filtered
 
-def ACTIVE_filter_Partition_N(i_ACTIVE_windows, pre_processed_gestures):
-    
+def ACTIVE_filter(i_ACTIVE_windows, pre_processed_gestures):
+    # ACTIVE_filter : delete if the window is not ACTIVE
+    list_pre_processed_gestures=pre_processed_gestures.tolist()
+    for i_ges in range(len(list_pre_processed_gestures)):
+        for i_try in range(len(list_pre_processed_gestures[i_ges])):
+            for i_win in reversed(range(len(list_pre_processed_gestures[i_ges][i_try]))):
+                if not i_win in range(i_ACTIVE_windows[i_ges][i_try][0], i_ACTIVE_windows[i_ges][i_try][0]+i_ACTIVE_windows[i_ges][i_try][1]):
+                    del list_pre_processed_gestures[i_ges][i_try][i_win]
+    return np.array(list_pre_processed_gestures)
 
 def mean_normalization(ACTIVE_RMS_gestures):
     for i_ges in range(len(ACTIVE_RMS_gestures)):
@@ -271,9 +278,10 @@ def main():
     i_ACTIVE_windows=extract_ACTIVE_window_i(RMS_gestures.tolist())
 
     # Feature extraction : Filter only ACTIVE windows and partition it into N large windows
-    ACTIVE_RMS_gestures=ACTIVE_filter_Partition_N(i_ACTIVE_windows, pre_processed_gestures)
+    ACTIVE_RMS_gestures=ACTIVE_filter(i_ACTIVE_windows, pre_processed_gestures)
     # Feature extraction : Mean normalization for all channels in each window
     mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
+
     # Naive Bayes classifier : Construct X and y
     X, y = segment_windowing(mean_normalized_RMS,CLASSIFYING_METHOD,SEGMENT_N)
     kinds=[i_ges for i_ges in range(mean_normalized_RMS.shape[0])]
