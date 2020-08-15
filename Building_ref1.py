@@ -11,10 +11,9 @@ from sklearn.metrics import confusion_matrix
 from sklearn.datasets import make_blobs
 WINDOW_SIZE = 150    # 20:9.76ms, 150:73.2ms
 TEST_RATIO = 0.3
-CLASSIFYING_METHOD = 2  # 1 or 2
 SEGMENT_N = 3
-PLOT_SCATTERED_DATA = True
-PLOT_CONFUSION_MATRIX = False
+PLOT_SCATTERED_DATA = False
+PLOT_CONFUSION_MATRIX = True
 
 def load_mat_files(dataDir):
     mats = []
@@ -193,7 +192,6 @@ def construct_X_y(mean_normalized_RMS):
         for i_try in range(mean_normalized_RMS.shape[1]):
             for i_Lwin in range(mean_normalized_RMS.shape[2]):
                 y=np.append(y, [i_ges])
-    check(y,1)
     return X, y
 
 def plot_confusion_matrix(y_test, kinds, y_pred):
@@ -204,7 +202,6 @@ def plot_confusion_matrix(y_test, kinds, y_pred):
     plt.axis('auto')
     plt.show()
 
-################## EDIT SCATTERED DATA PLOTTING ####################
 def plot_scattered_data(X, y):
     plt.scatter(X[:, 0], X[:, 1], c=y, s=50, cmap='RdBu')
     plt.show()
