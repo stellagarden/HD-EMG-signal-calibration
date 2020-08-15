@@ -51,15 +51,14 @@ def divide_to_windows(datas, window_size=WINDOW_SIZE):
 def compute_RMS(datas):
     return np.sqrt(np.mean(datas**2))
 
-def compute_RMS_for_each_windows(windows):
-    init=1
-    for window in windows:
-        if init==1:
-            RMSs=np.array([[compute_RMS(window)]])
-            init=0
-            continue
-        RMSs=np.append(RMSs, [[compute_RMS(window)]], axis=0)
-    return RMSs
+def compute_RMS_gestures(gestures):
+    RMS_gestures=np.array([[[[0 for i_ch in range(gestures.shape[3])] for i_win in range(gestures.shape[2])] for i_try in range(gestures.shape[1])] for i_ges in range(gestures.shape[0])])
+    for i_ges in range(gestures.shape[0]):
+        for i_try in range(gestures.shape[1]):
+            for i_win in range(gestures.shape[2]):
+                for i_ch in range(gestures.shape[3]):
+                        RMS_gestures[i_ges][i_try][i_win][i_ch]=compute_RMS(gestures[i_ges][i_try][i_win][i_ch])
+    return RMS_gestures
 
 def create_168_dimensional_window_vectors(channels):
     for i_ch in range(len(channels)):
@@ -69,16 +68,12 @@ def create_168_dimensional_window_vectors(channels):
         # Preprocessing : Apply butterworth band-pass filter]
         filtered_channel=butter_bandpass_filter(channels[i_ch])
         # Segmentation : Data processing : Divide continuous data into 150 samples window
-        windows_per_channel=divide_to_windows(filtered_channel)
-        # Segmentation : Compute RMS for each channel
-        RMSwindows_per_channel=compute_RMS_for_each_windows(windows_per_channel)
+        windows_per_channel=divide_to_windows(filtered_channel)     # windows_per_channel : (40, 150)
         if i_ch==0:
-            RMS_one_try=np.array(RMSwindows_per_channel)
             pre_processed_one_try=np.array(windows_per_channel)
             continue
-        RMS_one_try=np.append(RMS_one_try, RMSwindows_per_channel, axis=1)  # Adding column
-        pre_processed_one_try=np.append(pre_processed_one_try, windows_per_channel, axis=1)
-    return RMS_one_try, np.reshape(pre_processed_one_try, (pre_processed_one_try.shape[0],-1,WINDOW_SIZE))
+        pre_processed_one_try=np.append(pre_processed_one_try, windows_per_channel, axis=1) # Adding column
+    return np.reshape(pre_processed_one_try, (pre_processed_one_try.shape[0],-1,WINDOW_SIZE))
 
 def average_for_channel(gesture):
     average=np.array([])
@@ -249,22 +244,20 @@ def main():
     for gesture in gestures:
         init_try=1
         for one_try in gesture:
-            RMS_one_try, pre_processed_one_try = create_168_dimensional_window_vectors(one_try[0]) # one_try[0] : channels, ndarray
+            pre_processed_one_try = create_168_dimensional_window_vectors(one_try[0]) # one_try[0] : channels, ndarray
             if init_try == 1:
-                RMS_tries_for_gesture = np.array([RMS_one_try])
                 pre_processed_tries_for_gesture = np.array([pre_processed_one_try])
                 init_try=0
                 continue
-            RMS_tries_for_gesture = np.append(RMS_tries_for_gesture, [RMS_one_try], axis=0) # Adding height
-            pre_processed_tries_for_gesture = np.append(pre_processed_tries_for_gesture, [pre_processed_one_try], axis=0)
+            pre_processed_tries_for_gesture = np.append(pre_processed_tries_for_gesture, [pre_processed_one_try], axis=0)    # Adding height
         if init_gesture==1:
-            RMS_gestures = np.array([RMS_tries_for_gesture])
             pre_processed_gestures = np.array([pre_processed_tries_for_gesture])
             init_gesture=0
             continue
-        RMS_gestures = np.append(RMS_gestures, [RMS_tries_for_gesture], axis=0) # Adding blocks
-        pre_processed_gestures = np.append(pre_processed_gestures, [pre_processed_tries_for_gesture], axis=0)
-    check(pre_processed_gestures)
+        pre_processed_gestures = np.append(pre_processed_gestures, [pre_processed_tries_for_gesture], axis=0)   # Adding blocks
+    
+    # Segmentation : Compute RMS
+    RMS_gestures=compute_RMS_gestures(pre_processed_gestures)
     # Segmentation : Base normalization
     RMS_gestures=base_normalization(RMS_gestures)
     # Segmentation : Median filtering
@@ -276,6 +269,7 @@ def main():
             RMS_gestures[i_ges][i_try]=channels.transpose()
     # Segmentation : Dertermine which window is ACTIVE
     i_ACTIVE_windows=extract_ACTIVE_window_i(RMS_gestures.tolist())
+    check(i_ACTIVE_windows)
 
     # Feature extraction : Filter only ACTIVE windows and partition it into N large windows
     ACTIVE_RMS_gestures=ACTIVE_filter_Partition_N(i_ACTIVE_windows, pre_processed_gestures)
