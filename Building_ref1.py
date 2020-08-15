@@ -157,6 +157,9 @@ def ACTIVE_filter(i_ACTIVE_windows, pre_processed_gestures):
                     del list_pre_processed_gestures[i_ges][i_try][i_win]
     return np.array(list_pre_processed_gestures)
 
+def Partitioing_N(ACTIVE_RMS_gestures):
+    return
+
 def mean_normalization(ACTIVE_RMS_gestures):
     for i_ges in range(len(ACTIVE_RMS_gestures)):
         for i_try in range(len(ACTIVE_RMS_gestures[i_ges])):
@@ -277,8 +280,10 @@ def main():
     # Segmentation : Dertermine which window is ACTIVE
     i_ACTIVE_windows=extract_ACTIVE_window_i(RMS_gestures.tolist())
 
-    # Feature extraction : Filter only ACTIVE windows and partition it into N large windows
+    # Feature extraction : Filter only ACTIVE windows
     ACTIVE_RMS_gestures=ACTIVE_filter(i_ACTIVE_windows, pre_processed_gestures)
+    # Feature extraction : Partition existing windows into N large windows
+    ACTIVE_N_RMS_gestures=Partitioing_N(ACTIVE_RMS_gestures)
     # Feature extraction : Mean normalization for all channels in each window
     mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
 
