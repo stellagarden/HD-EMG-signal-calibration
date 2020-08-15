@@ -99,7 +99,7 @@ def base_normalization(RMS_gestures):
                     RMS_gestures[i_ges][i_try][i_win][i_ch]-=average_channel_idle_gesture[i_ch]
     return RMS_gestures
 
-def determine_ACTIVE_windows(RMS_gestures):
+def extract_ACTIVE_window_i(RMS_gestures):
     for i_ges in range(len(RMS_gestures)):
         for i_try in range(len(RMS_gestures[i_ges])):
             # Segmentation : Determine whether ACTIVE : Compute summarized RMS
@@ -133,12 +133,16 @@ def determine_ACTIVE_windows(RMS_gestures):
                         segs.append((start, contiguous))
                         contiguous=0
             seg_start, seg_len = sorted(segs, key=lambda seg: seg[1], reverse=True)[0]
-            # Segmentation : Determine whether ACTIVE : delete if the window is not ACTIVE
-            ###################### HAVE TO RECTIFY BELOW PART #########################
-            for i_win in reversed(range(len(RMS_gestures[i_ges][i_try]))):
-                if not i_win in range(seg_start, seg_start+seg_len):
-                    del RMS_gestures[i_ges][i_try][i_win]
-    return RMS_gestures
+            # Segmentation : Return ACTIVE window indexes
+            if i_try==0:
+                i_one_try_ACTIVE = np.array([[seg_start, seg_len]])
+                continue
+            i_one_try_ACTIVE = np.append(i_one_try_ACTIVE, [[seg_start, seg_len]], axis=0)
+        if i_ges==0:
+            i_ACTIVE_windows = np.array([i_one_try_ACTIVE])
+            continue
+        i_ACTIVE_windows = np.append(i_ACTIVE_windows, [i_one_try_ACTIVE], axis=0)
+    return i_ACTIVE_windows
 
 def medfilt(channel, kernel_size=3):
     filtered=np.zeros(len(channel))
@@ -220,6 +224,7 @@ def check(x):
     print("length: ", len(x))
     print("type: ", type(x))
     print("shape: ", x.shape)
+    print(x)
     raise ValueError("-------------WORKING LINE--------------")
 
 def check_segment_len(ACTIVE_RMS_gestures):
@@ -266,7 +271,7 @@ def main():
                 channels[i_ch]=medfilt(channels[i_ch])
             RMS_gestures[i_ges][i_try]=channels.transpose()
     # Segmentation : Dertermine which window is ACTIVE
-    i_ACTIVE_windows=determine_ACTIVE_windows(RMS_gestures.tolist())
+    i_ACTIVE_windows=extract_ACTIVE_window_i(RMS_gestures.tolist())
 
     # Feature extraction : Mean normalization for all channels in each window
     mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
