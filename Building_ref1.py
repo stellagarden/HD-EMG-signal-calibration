@@ -186,7 +186,7 @@ def mean_normalization(ACTIVE_N_RMS_gestures):
                     ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin][i_ch]=(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin][i_ch]-Mean)/delta
     return ACTIVE_N_RMS_gestures
 
-def segment_windowing(mean_normalized_RMS,CLASSIFYING_METHOD,N=3):
+def construct_X_y(mean_normalized_RMS,N=SEGMENT_N):
     gesture_flattened = np.reshape(mean_normalized_RMS, -1)
     if CLASSIFYING_METHOD==1:
         init_try=1
@@ -303,7 +303,7 @@ def main():
     mean_normalized_RMS=mean_normalization(ACTIVE_N_RMS_gestures)
 
     # Naive Bayes classifier : Construct X and y
-    X, y = segment_windowing(mean_normalized_RMS,CLASSIFYING_METHOD,SEGMENT_N)
+    X, y = construct_X_y(mean_normalized_RMS,SEGMENT_N)
     kinds=[i_ges for i_ges in range(mean_normalized_RMS.shape[0])]
     # Naive Bayes classifier : Basic method : NOT LOOCV
     gnb = GaussianNB()
