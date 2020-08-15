@@ -52,12 +52,12 @@ def compute_RMS(datas):
     return np.sqrt(np.mean(datas**2))
 
 def compute_RMS_gestures(gestures):
-    RMS_gestures=np.array([[[[0 for i_ch in range(gestures.shape[3])] for i_win in range(gestures.shape[2])] for i_try in range(gestures.shape[1])] for i_ges in range(gestures.shape[0])])
+    RMS_gestures=np.array([[[[0.0 for i_ch in range(gestures.shape[3])] for i_win in range(gestures.shape[2])] for i_try in range(gestures.shape[1])] for i_ges in range(gestures.shape[0])])
     for i_ges in range(gestures.shape[0]):
         for i_try in range(gestures.shape[1]):
             for i_win in range(gestures.shape[2]):
                 for i_ch in range(gestures.shape[3]):
-                        RMS_gestures[i_ges][i_try][i_win][i_ch]=compute_RMS(gestures[i_ges][i_try][i_win][i_ch])
+                    RMS_gestures[i_ges][i_try][i_win][i_ch]=compute_RMS(gestures[i_ges][i_try][i_win][i_ch])
     return RMS_gestures
 
 def create_168_dimensional_window_vectors(channels):
@@ -222,7 +222,7 @@ def check(x):
     print("length: ", len(x))
     print("type: ", type(x))
     print("shape: ", x.shape)
-    #print(x)
+    print(x)
     raise ValueError("-------------WORKING LINE--------------")
 
 def check_segment_len(ACTIVE_RMS_gestures):
@@ -269,8 +269,7 @@ def main():
             RMS_gestures[i_ges][i_try]=channels.transpose()
     # Segmentation : Dertermine which window is ACTIVE
     i_ACTIVE_windows=extract_ACTIVE_window_i(RMS_gestures.tolist())
-    check(i_ACTIVE_windows)
-
+    
     # Feature extraction : Filter only ACTIVE windows and partition it into N large windows
     ACTIVE_RMS_gestures=ACTIVE_filter_Partition_N(i_ACTIVE_windows, pre_processed_gestures)
     # Feature extraction : Mean normalization for all channels in each window
