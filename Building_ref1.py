@@ -186,50 +186,15 @@ def mean_normalization(ACTIVE_N_RMS_gestures):
                     ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin][i_ch]=(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin][i_ch]-Mean)/delta
     return ACTIVE_N_RMS_gestures
 
-def construct_X_y(mean_normalized_RMS,N=SEGMENT_N):
-    gesture_flattened = np.reshape(mean_normalized_RMS, -1)
-    if CLASSIFYING_METHOD==1:
-        init_try=1
-        for segment in gesture_flattened:
-            channels=np.array(segment).transpose()
-            chs_windows=np.array([])
-            init_ch=1
-            for channel in channels:
-                ch_windows=np.array([])
-                for i in range(N):
-                    ch_windows=np.append(ch_windows, [compute_RMS(channel[(len(channel)//N)*i:(len(channel)//N)*(i+1)])])
-                if init_ch==1: 
-                    chs_windows=np.array([ch_windows])
-                    init_ch=0
-                    continue
-                chs_windows=np.append(chs_windows, [ch_windows], axis=0)
-            if init_try==1:
-                tries_windows=np.array([chs_windows.transpose()])
-                init_try=0
-                continue
-            tries_windows=np.append(tries_windows, [chs_windows.transpose()], axis=0)
-        X=np.reshape(tries_windows, (tries_windows.shape[0],tries_windows.shape[1]*tries_windows.shape[2]))
-    elif CLASSIFYING_METHOD==2:
-        init_try=1
-        for segment in gesture_flattened:
-            if init_try==1:
-                X=np.array(np.array(segment))
-                init_try=0
-                continue
-            X=np.append(X, np.array(segment), axis=0)
-    else: raise ValueError("CLASSIFYING_METHOD only can be 1 or 2")
-    return X, construct_label(mean_normalized_RMS,CLASSIFYING_METHOD)
-
-def construct_label(mean_normalized_RMS,CLASSIFYING_METHOD):
+def construct_X_y(mean_normalized_RMS):
+    X=np.reshape(mean_normalized_RMS, (mean_normalized_RMS.shape[0]*mean_normalized_RMS.shape[1]*mean_normalized_RMS.shape[2], mean_normalized_RMS.shape[3]))
     y=np.array([])
-    if CLASSIFYING_METHOD==1:
-        for i_ges in range(len(mean_normalized_RMS)):
-            y=np.append(y, [i_ges for i_try in range(mean_normalized_RMS.shape[1])])
-    elif CLASSIFYING_METHOD==2:
-        for i_ges in range(mean_normalized_RMS.shape[0]):
-            for i_try in range(mean_normalized_RMS.shape[1]):
-                y=np.append(y, [i_ges for i_win in range(len(mean_normalized_RMS[i_ges][i_try]))])    
-    return y
+    for i_ges in range(mean_normalized_RMS.shape[0]):
+        for i_try in range(mean_normalized_RMS.shape[1]):
+            for i_Lwin in range(mean_normalized_RMS.shape[2]):
+                y=np.append(y, [i_ges])
+    check(y,1)
+    return X, y
 
 def plot_confusion_matrix(y_test, kinds, y_pred):
     mat = confusion_matrix(y_test, y_pred)
@@ -303,7 +268,7 @@ def main():
     mean_normalized_RMS=mean_normalization(ACTIVE_N_RMS_gestures)
 
     # Naive Bayes classifier : Construct X and y
-    X, y = construct_X_y(mean_normalized_RMS,SEGMENT_N)
+    X, y = construct_X_y(mean_normalized_RMS)
     kinds=[i_ges for i_ges in range(mean_normalized_RMS.shape[0])]
     # Naive Bayes classifier : Basic method : NOT LOOCV
     gnb = GaussianNB()
