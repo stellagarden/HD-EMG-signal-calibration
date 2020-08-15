@@ -74,12 +74,11 @@ def create_168_dimensional_window_vectors(channels):
         RMSwindows_per_channel=compute_RMS_for_each_windows(windows_per_channel)
         if i_ch==0:
             RMS_one_try=np.array(RMSwindows_per_channel)
-            rare_one_try=np.array(windows_per_channel)
+            pre_processed_one_try=np.array(windows_per_channel)
             continue
         RMS_one_try=np.append(RMS_one_try, RMSwindows_per_channel, axis=1)  # Adding column
-        rare_one_try=np.append(rare_one_try, windows_per_channel, axis=1)
-    check(rare_one_try)
-    return RMS_one_try, rare_one_try
+        pre_processed_one_try=np.append(pre_processed_one_try, windows_per_channel, axis=1)
+    return RMS_one_try, pre_processed_one_try
 
 def average_for_channel(gesture):
     average=np.array([])
@@ -100,7 +99,7 @@ def base_normalization(RMS_gestures):
                     RMS_gestures[i_ges][i_try][i_win][i_ch]-=average_channel_idle_gesture[i_ch]
     return RMS_gestures
 
-def ACTIVE_filter(RMS_gestures):
+def determine_ACTIVE_windows(RMS_gestures):
     for i_ges in range(len(RMS_gestures)):
         for i_try in range(len(RMS_gestures[i_ges])):
             # Segmentation : Determine whether ACTIVE : Compute summarized RMS
@@ -135,6 +134,7 @@ def ACTIVE_filter(RMS_gestures):
                         contiguous=0
             seg_start, seg_len = sorted(segs, key=lambda seg: seg[1], reverse=True)[0]
             # Segmentation : Determine whether ACTIVE : delete if the window is not ACTIVE
+            ###################### HAVE TO RECTIFY BELOW PART #########################
             for i_win in reversed(range(len(RMS_gestures[i_ges][i_try]))):
                 if not i_win in range(seg_start, seg_start+seg_len):
                     del RMS_gestures[i_ges][i_try][i_win]
@@ -236,30 +236,29 @@ def main():
     #In idle gesture, we just use 2,4,7,8,11,13,19,25,26,30th tries in order to match the number of datas
     gestures[0]=gestures[0][[1,3,6,7,10,12,18,24,25,29]]
     
-    # Signal Preprocessing & Data processing for segmentation
+    # Signal Pre-processing & Construct windows
     init_gesture=1
     for gesture in gestures:
         init_try=1
         for one_try in gesture:
-            RMS_one_try, rare_one_try = create_168_dimensional_window_vectors(one_try[0]) # one_try[0] : channels, ndarray
+            RMS_one_try, pre_processed_one_try = create_168_dimensional_window_vectors(one_try[0]) # one_try[0] : channels, ndarray
             if init_try == 1:
                 RMS_tries_for_gesture = np.array([RMS_one_try])
-                rare_tries_for_gesture = np.array([rare_one_try])
+                pre_processed_tries_for_gesture = np.array([pre_processed_one_try])
                 init_try=0
                 continue
             RMS_tries_for_gesture = np.append(RMS_tries_for_gesture, [RMS_one_try], axis=0) # Adding height
-            rare_tries_for_gesture = np.append(rare_tries_for_gesture, [rare_one_try], axis=0)
+            pre_processed_tries_for_gesture = np.append(pre_processed_tries_for_gesture, [pre_processed_one_try], axis=0)
         if init_gesture==1:
             RMS_gestures = np.array([RMS_tries_for_gesture])
-            rare_gestures = np.array([rare_tries_for_gesture])
+            pre_processed_gestures = np.array([pre_processed_tries_for_gesture])
             init_gesture=0
             continue
         RMS_gestures = np.append(RMS_gestures, [RMS_tries_for_gesture], axis=0) # Adding blocks
-        rare_gestures = np.append(rare_gestures, [rare_tries_for_gesture], axis=0)
-    ######################### WORKING LINE ##########################
-    # Segmentation : Data processing : Base normalization
+        pre_processed_gestures = np.append(pre_processed_gestures, [pre_processed_tries_for_gesture], axis=0)
+    # Segmentation : Base normalization
     RMS_gestures=base_normalization(RMS_gestures)
-    # Segmentation : Data processing : Median filtering
+    # Segmentation : Median filtering
     for i_ges in range(len(RMS_gestures)):
         for i_try in range(len(RMS_gestures[i_ges])):
             channels=RMS_gestures[i_ges][i_try].transpose()
@@ -267,7 +266,8 @@ def main():
                 channels[i_ch]=medfilt(channels[i_ch])
             RMS_gestures[i_ges][i_try]=channels.transpose()
     # Segmentation : Dertermine which window is ACTIVE
-    ACTIVE_RMS_gestures=ACTIVE_filter(RMS_gestures.tolist())
+    i_ACTIVE_windows=determine_ACTIVE_windows(RMS_gestures.tolist())
+
     # Feature extraction : Mean normalization for all channels in each window
     mean_normalized_RMS=mean_normalization(np.array(ACTIVE_RMS_gestures))
     # Naive Bayes classifier : Construct X and y
