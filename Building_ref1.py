@@ -264,14 +264,16 @@ def extract_X_y_for_one_session(gestures):
     return X, y
 
 def main():
-    folder_counter = sum([len(folder) for r, d, folder in os.walk("./data/")])
-    print(folder_counter)
-    check(folder_counter)
-    
-    #loading .mat files consist of 0,1,2,3 gestures
-    gestures = load_mat_files("./data/ref1_subject1_session1/")  # gestures : list
-    #In idle gesture, we just use 2,4,7,8,11,13,19,25,26,30th tries in order to match the number of datas
-    gestures[0]=gestures[0][[1,3,6,7,10,12,18,24,25,29]]
+    n_sessions=len(next(os.walk('./data/'))[1])
+    for i_session in range(n_sessions):
+        path="./data/ref1_subject1_session"+str(i_session)+"/"
+        if i_session==0:
+            sessions=np.array([load_mat_files(path)])
+            #In idle gesture, we just use 2,4,7,8,11,13,19,25,26,30th tries in order to match the number of datas
+            sessions[i_session][0]=sessions[i_session][0][[1,3,6,7,10,12,18,24,25,29]]
+            continue
+        sessions=np.append(sessions, [load_mat_files(path)], axis=0)
+        sessions[i_session][0]=sessions[i_session][0][[1,3,6,7,10,12,18,24,25,29]]
 
     init_session=1
     for session in sessions:
@@ -281,10 +283,11 @@ def main():
             y=np.array(y_session)
             init_session=0
             continue
-        X=X.append(X_session)
-        y=y.append(y_session)
+        X=np.append(X, X_session)
+        y=np.append(y, y_session)
+        break
     
-    kinds=[i_ges for i_ges in range(mean_normalized_RMS.shape[0])]
+    kinds=list(set(y))
     # Naive Bayes classifier : Basic method : NOT LOOCV
     gnb = GaussianNB()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_RATIO, random_state=0)
