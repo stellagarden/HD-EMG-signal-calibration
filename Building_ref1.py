@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import random
 from scipy import io
 from scipy.signal import butter, lfilter, freqz
 from statistics import median
@@ -12,6 +13,7 @@ from sklearn.datasets import make_blobs
 WINDOW_SIZE = 150    # 20:9.76ms, 150:73.2ms
 TEST_RATIO = 0.3
 SEGMENT_N = 3
+PLOT_RANDOM_DATA = True
 PLOT_CONFUSION_MATRIX = True
 
 def load_mat_files(dataDir):
@@ -220,6 +222,9 @@ def check_segment_len(ACTIVE_RMS_gestures):
             print(len(ACTIVE_RMS_gestures[i][j]), end=' ')
         print()
 
+def plot_one_data(one_try):
+    return 
+
 def extract_X_y_for_one_session(gestures):
     # Signal Pre-processing & Construct windows
     init_gesture=1
@@ -237,6 +242,13 @@ def extract_X_y_for_one_session(gestures):
             init_gesture=0
             continue
         pre_processed_gestures = np.append(pre_processed_gestures, [pre_processed_tries_for_gesture], axis=0)   # Adding blocks
+    
+    # Plot one data
+    if PLOT_RANDOM_DATA==True:
+        rand_ges = random.randint(0, pre_processed_gestures.shape[0])
+        rand_try = random.randint(0, pre_processed_gestures.shape[1])        
+        plot_one_data(pre_processed_gestures[rand_ges][rand_try])
+        PLOT_RANDOM_DATA=False
 
     # Segmentation : Compute RMS
     RMS_gestures=compute_RMS_gestures(pre_processed_gestures)
