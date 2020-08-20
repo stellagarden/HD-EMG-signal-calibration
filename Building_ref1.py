@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import confusion_matrix
 from sklearn.datasets import make_blobs
+from sklearn.preprocessing import MinMaxScaler
 WINDOW_SIZE = 150    # 20:9.76ms, 150:73.2ms
 TEST_RATIO = 0.3
 SEGMENT_N = 3
@@ -223,7 +224,11 @@ def check_segment_len(ACTIVE_RMS_gestures):
         print()
 
 def plot_one_data(one_try):
-    return 
+    # Normalize data
+    norm_try=MinMaxScaler().fit_transform(one_try)
+    # Plot
+    
+    return
 
 def extract_X_y_for_one_session(gestures):
     # Signal Pre-processing & Construct windows
