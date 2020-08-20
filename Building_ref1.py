@@ -12,6 +12,7 @@ from sklearn.datasets import make_blobs
 WINDOW_SIZE = 150    # 20:9.76ms, 150:73.2ms
 TEST_RATIO = 0.3
 SEGMENT_N = 3
+CALIBRATE = True
 PLOT_SCATTERED_DATA = False
 PLOT_CONFUSION_MATRIX = True
 
@@ -299,7 +300,7 @@ def main():
     y_pred = gnb.fit(X_train, y_train).predict(X_test)
     if PLOT_SCATTERED_DATA:
         plot_scattered_data(X_test, y_pred)
-    print("Accuracy : %d%" % (((y_test != y_pred).sum()/X_test.shape[0])*100))
+    print("Accuracy : %d%%" % (((y_test != y_pred).sum()/X_test.shape[0])*100))
     if PLOT_CONFUSION_MATRIX:
         plot_confusion_matrix(y_test, kinds, y_pred)
     
