@@ -220,12 +220,7 @@ def check_segment_len(ACTIVE_RMS_gestures):
             print(len(ACTIVE_RMS_gestures[i][j]), end=' ')
         print()
 
-def main():
-    #loading .mat files consist of 0,1,2,3(,11,17,18,21,23,24,25 not for light) gestures
-    gestures = load_mat_files("./data ref1_subject1_session1/")  # gestures : list
-    #In idle gesture, we just use 2,4,7,8,11,13,19,25,26,30th tries in order to match the number of datas
-    gestures[0]=gestures[0][[1,3,6,7,10,12,18,24,25,29]]
-    
+def extract_X_y_for_one_session(gestures):
     # Signal Pre-processing & Construct windows
     init_gesture=1
     for gesture in gestures:
@@ -266,6 +261,29 @@ def main():
 
     # Naive Bayes classifier : Construct X and y
     X, y = construct_X_y(mean_normalized_RMS)
+    return X, y
+
+def main():
+    folder_counter = sum([len(folder) for r, d, folder in os.walk("./data/")])
+    print(folder_counter)
+    check(folder_counter)
+    
+    #loading .mat files consist of 0,1,2,3 gestures
+    gestures = load_mat_files("./data/ref1_subject1_session1/")  # gestures : list
+    #In idle gesture, we just use 2,4,7,8,11,13,19,25,26,30th tries in order to match the number of datas
+    gestures[0]=gestures[0][[1,3,6,7,10,12,18,24,25,29]]
+
+    init_session=1
+    for session in sessions:
+        X_session, y_session=extract_X_y_for_one_session(session)
+        if init_session==1:
+            X=np.array(X_session)
+            y=np.array(y_session)
+            init_session=0
+            continue
+        X=X.append(X_session)
+        y=y.append(y_session)
+    
     kinds=[i_ges for i_ges in range(mean_normalized_RMS.shape[0])]
     # Naive Bayes classifier : Basic method : NOT LOOCV
     gnb = GaussianNB()
