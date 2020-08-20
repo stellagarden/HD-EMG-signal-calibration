@@ -12,8 +12,6 @@ from sklearn.datasets import make_blobs
 WINDOW_SIZE = 150    # 20:9.76ms, 150:73.2ms
 TEST_RATIO = 0.3
 SEGMENT_N = 3
-CALIBRATE = True
-PLOT_SCATTERED_DATA = False
 PLOT_CONFUSION_MATRIX = True
 
 def load_mat_files(dataDir):
@@ -207,10 +205,6 @@ def plot_confusion_matrix(y_test, kinds, y_pred):
     plt.axis('auto')
     plt.show()
 
-def plot_scattered_data(X, y):
-    plt.scatter(X[:, 0], X[:, 1], c=y, s=50, cmap='RdBu')
-    plt.show()
-
 def check(x, prin=0):
     print("length: ", len(x))
     print("type: ", type(x))
@@ -243,7 +237,7 @@ def extract_X_y_for_one_session(gestures):
             init_gesture=0
             continue
         pre_processed_gestures = np.append(pre_processed_gestures, [pre_processed_tries_for_gesture], axis=0)   # Adding blocks
-    
+
     # Segmentation : Compute RMS
     RMS_gestures=compute_RMS_gestures(pre_processed_gestures)
     # Segmentation : Base normalization
@@ -298,8 +292,6 @@ def main():
     gnb = GaussianNB()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_RATIO, random_state=0)
     y_pred = gnb.fit(X_train, y_train).predict(X_test)
-    if PLOT_SCATTERED_DATA:
-        plot_scattered_data(X_test, y_pred)
     print("Accuracy : %d%%" % (((y_test != y_pred).sum()/X_test.shape[0])*100))
     if PLOT_CONFUSION_MATRIX:
         plot_confusion_matrix(y_test, kinds, y_pred)
