@@ -126,7 +126,11 @@ def extract_ACTIVE_window_i(RMS_gestures):
                         contiguous+=1
                         segs.append((start, contiguous))
                         contiguous=0
-            seg_start, seg_len = sorted(segs, key=lambda seg: seg[1], reverse=True)[0]
+            if len(segs)==0:
+                seg_start= sorted(i_ACTIVEs, reverse=True)[0]
+                seg_len=1
+            else:
+                seg_start, seg_len = sorted(segs, key=lambda seg: seg[1], reverse=True)[0]
             # Segmentation : Return ACTIVE window indexes
             if i_try==0:
                 i_one_try_ACTIVE = np.array([[seg_start, seg_len]])
@@ -209,7 +213,8 @@ def plot_scattered_data(X, y):
 def check(x, prin=0):
     print("length: ", len(x))
     print("type: ", type(x))
-    print("shape: ", x.shape)
+    if type(x) == "ndarray":
+        print("shape: ", x.shape)
     if prin==1: print(x)
     raise ValueError("-------------WORKING LINE--------------")
 
@@ -277,24 +282,24 @@ def main():
 
     init_session=1
     for session in sessions:
+        # Input data for each session
         X_session, y_session=extract_X_y_for_one_session(session)
         if init_session==1:
             X=np.array(X_session)
             y=np.array(y_session)
             init_session=0
             continue
-        X=np.append(X, X_session)
+        X=np.append(X, X_session, axis=0)
         y=np.append(y, y_session)
-        break
-    
     kinds=list(set(y))
+
     # Naive Bayes classifier : Basic method : NOT LOOCV
     gnb = GaussianNB()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_RATIO, random_state=0)
     y_pred = gnb.fit(X_train, y_train).predict(X_test)
     if PLOT_SCATTERED_DATA:
         plot_scattered_data(X_test, y_pred)
-    print("Number of mislabeled prediction out of a total %d prediction : %d" % (X_test.shape[0], (y_test != y_pred).sum()))
+    print("Accuracy : %d%" % (((y_test != y_pred).sum()/X_test.shape[0])*100))
     if PLOT_CONFUSION_MATRIX:
         plot_confusion_matrix(y_test, kinds, y_pred)
     
