@@ -232,7 +232,7 @@ def plot_some_data(gestures,PLOTTING_METHOD):
     # Choose random three data
     chose=[]
     for i in range(3):
-        rand_ges = random.randint(1, len(gestures)-1)    # Except idle gesture
+        rand_ges = random.randint(4, len(gestures)-1)    # Except idle gesture  # CONSTANT
         rand_try = random.randint(0, len(gestures[rand_ges])-1)
         rand_win = random.randint(0, len(gestures[rand_ges][rand_try])-1)
         chose.append((rand_ges, rand_try, rand_win))
@@ -240,13 +240,14 @@ def plot_some_data(gestures,PLOTTING_METHOD):
     x,y=np.meshgrid(range(ACTUAL_COLUMN),range(ACTUAL_RAW))
     fig, ax = plt.subplots(nrows=3)
     if PLOTTING_METHOD==1:
-        plt.axes(projection='3d').plot_surface(x, y, gestures[chose[0][0]][chose[0][1]][chose[0][2]], cmap='jet')
+        plt.axes(projection='3d').plot_surface(x, y, np.reshape(gestures[chose[0][0]][chose[0][1]][chose[0][2]], (ACTUAL_RAW, ACTUAL_COLUMN)), cmap='jet')
+        plt.title("%dth active window in %dth try in %dth gesture" %(chose[0][2], chose[0][1], chose[0][0]))
     elif PLOTTING_METHOD==2:
         im=[]
         for i in range(len(chose)):
             df = pd.DataFrame({"x":x.flatten(), "y":y.flatten(),"value":gestures[chose[i][0]][chose[i][1]][chose[i][2]].flatten()}).pivot(index="y", columns="x", values="value")
             im.append(ax[i].imshow(df.values, cmap="viridis", vmin=0, vmax=1))
-            ax[i].set_title("%dth window in %dth try in %dth gesture" %(chose[i][2], chose[i][1], chose[i][0]))
+            ax[i].set_title("%dth active window in %dth try in %dth gesture" %(chose[i][2], chose[i][1], chose[i][0]))
             fig.colorbar(im[i], ax=ax[i])
     else:
         raise ValueError("Plotting method can only be 1 or 2.")
