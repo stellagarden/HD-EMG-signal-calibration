@@ -3,8 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import random
+import pandas as pd
+from mpl_toolkits import mplot3d
 from scipy import io
 from scipy.signal import butter, lfilter, freqz
+from scipy.interpolate import interp2d
 from statistics import median
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
@@ -15,7 +18,10 @@ WINDOW_SIZE = 150    # 20:9.76ms, 150:73.2ms
 TEST_RATIO = 0.3
 SEGMENT_N = 3
 PLOT_RANDOM_DATA = True
+PLOTTING_METHOD = 2     # 1(surface) or 2(colormap)
 PLOT_CONFUSION_MATRIX = True
+ACTUAL_COLUMN=24
+ACTUAL_RAW=7
 
 def load_mat_files(dataDir):
     mats = []
@@ -211,8 +217,7 @@ def plot_confusion_matrix(y_test, kinds, y_pred):
 def check(x, prin=0):
     print("length: ", len(x))
     print("type: ", type(x))
-    if type(x) == "ndarray":
-        print("shape: ", x.shape)
+    if type(x) == type(np.array([])): print("shape: ", x.shape)
     if prin==1: print(x)
     raise ValueError("-------------WORKING LINE--------------")
 
@@ -223,14 +228,33 @@ def check_segment_len(ACTIVE_RMS_gestures):
             print(len(ACTIVE_RMS_gestures[i][j]), end=' ')
         print()
 
-def plot_one_data(one_try):
-    # Normalize data
-    norm_try=MinMaxScaler().fit_transform(one_try)
+def plot_some_data(gestures,PLOTTING_METHOD):
+    # Choose random three data
+    chose=[]
+    for i in range(3):
+        rand_ges = random.randint(1, len(gestures)-1)    # Except idle gesture
+        rand_try = random.randint(0, len(gestures[rand_ges])-1)
+        rand_win = random.randint(0, len(gestures[rand_ges][rand_try])-1)
+        chose.append((rand_ges, rand_try, rand_win))
     # Plot
-    
-    return
+    x,y=np.meshgrid(range(ACTUAL_COLUMN),range(ACTUAL_RAW))
+    fig, ax = plt.subplots(nrows=3)
+    if PLOTTING_METHOD==1:
+        plt.axes(projection='3d').plot_surface(x, y, gestures[chose[0][0]][chose[0][1]][chose[0][2]], cmap='jet')
+    elif PLOTTING_METHOD==2:
+        im=[]
+        for i in range(len(chose)):
+            df = pd.DataFrame({"x":x.flatten(), "y":y.flatten(),"value":gestures[chose[i][0]][chose[i][1]][chose[i][2]].flatten()}).pivot(index="y", columns="x", values="value")
+            im.append(ax[i].imshow(df.values, cmap="viridis", vmin=0, vmax=1))
+            ax[i].set_title("%dth window in %dth try in %dth gesture" %(chose[i][2], chose[i][1], chose[i][0]))
+            fig.colorbar(im[i], ax=ax[i])
+    else:
+        raise ValueError("Plotting method can only be 1 or 2.")
+    plt.tight_layout()
+    plt.show()
+    check(gestures)
 
-def extract_X_y_for_one_session(gestures):
+def extract_X_y_for_one_session(gestures, PLOT_RANDOM_DATA):
     # Signal Pre-processing & Construct windows
     init_gesture=1
     for gesture in gestures:
@@ -247,13 +271,6 @@ def extract_X_y_for_one_session(gestures):
             init_gesture=0
             continue
         pre_processed_gestures = np.append(pre_processed_gestures, [pre_processed_tries_for_gesture], axis=0)   # Adding blocks
-    
-    # Plot one data
-    if PLOT_RANDOM_DATA==True:
-        rand_ges = random.randint(0, pre_processed_gestures.shape[0])
-        rand_try = random.randint(0, pre_processed_gestures.shape[1])        
-        plot_one_data(pre_processed_gestures[rand_ges][rand_try])
-        PLOT_RANDOM_DATA=False
 
     # Segmentation : Compute RMS
     RMS_gestures=compute_RMS_gestures(pre_processed_gestures)
@@ -275,6 +292,11 @@ def extract_X_y_for_one_session(gestures):
     ACTIVE_N_RMS_gestures=Repartition_N_Compute_RMS(ACTIVE_pre_processed_gestures, SEGMENT_N)
     # Feature extraction : Mean normalization for all channels in each window
     mean_normalized_RMS=mean_normalization(ACTIVE_N_RMS_gestures)
+    
+    # Plot one data
+    if PLOT_RANDOM_DATA==True:
+        plot_some_data(mean_normalized_RMS,PLOTTING_METHOD)
+        PLOT_RANDOM_DATA=False
 
     # Naive Bayes classifier : Construct X and y
     X, y = construct_X_y(mean_normalized_RMS)
@@ -295,7 +317,7 @@ def main():
     init_session=1
     for session in sessions:
         # Input data for each session
-        X_session, y_session=extract_X_y_for_one_session(session)
+        X_session, y_session=extract_X_y_for_one_session(session, PLOT_RANDOM_DATA)
         if init_session==1:
             X=np.array(X_session)
             y=np.array(y_session)
