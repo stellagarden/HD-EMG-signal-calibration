@@ -232,15 +232,15 @@ def plot_some_data(gestures,PLOTTING_METHOD):
     # Choose random three data
     chose=[]
     for i in range(3):
-        rand_ges = random.randint(4, len(gestures)-1)    # Except idle gesture  # CONSTANT
+        rand_ges = random.randint(1, len(gestures)-1)    # Except idle gesture
         rand_try = random.randint(0, len(gestures[rand_ges])-1)
         rand_win = random.randint(0, len(gestures[rand_ges][rand_try])-1)
         chose.append((rand_ges, rand_try, rand_win))
     # Plot
-    x,y=np.meshgrid(range(ACTUAL_COLUMN),range(ACTUAL_RAW))
+    y,x=np.meshgrid(range(ACTUAL_RAW),range(ACTUAL_COLUMN))
     fig, ax = plt.subplots(nrows=3)
     if PLOTTING_METHOD==1:
-        plt.axes(projection='3d').plot_surface(x, y, np.reshape(gestures[chose[0][0]][chose[0][1]][chose[0][2]], (ACTUAL_RAW, ACTUAL_COLUMN)), cmap='jet')
+        plt.axes(projection='3d').plot_surface(x, y, np.reshape(gestures[chose[0][0]][chose[0][1]][chose[0][2]], (ACTUAL_COLUMN, ACTUAL_RAW)), cmap='jet')
         plt.title("%dth active window in %dth try in %dth gesture" %(chose[0][2], chose[0][1], chose[0][0]))
     elif PLOTTING_METHOD==2:
         im=[]
@@ -253,7 +253,6 @@ def plot_some_data(gestures,PLOTTING_METHOD):
         raise ValueError("Plotting method can only be 1 or 2.")
     plt.tight_layout()
     plt.show()
-    check(gestures)
 
 def extract_X_y_for_one_session(gestures, PLOT_RANDOM_DATA):
     # Signal Pre-processing & Construct windows
@@ -296,6 +295,7 @@ def extract_X_y_for_one_session(gestures, PLOT_RANDOM_DATA):
     
     # Plot one data
     if PLOT_RANDOM_DATA==True:
+        global PLOT_RANDOM_DATA
         plot_some_data(mean_normalized_RMS,PLOTTING_METHOD)
         PLOT_RANDOM_DATA=False
 
@@ -332,7 +332,7 @@ def main():
     gnb = GaussianNB()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_RATIO, random_state=0)
     y_pred = gnb.fit(X_train, y_train).predict(X_test)
-    print("Accuracy : %d%%" % (((y_test != y_pred).sum()/X_test.shape[0])*100))
+    print("Accuracy : %d%%" % (100-(((y_test != y_pred).sum()/X_test.shape[0])*100)))
     if PLOT_CONFUSION_MATRIX:
         plot_confusion_matrix(y_test, kinds, y_pred)
     
