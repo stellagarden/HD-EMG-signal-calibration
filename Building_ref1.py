@@ -293,7 +293,6 @@ def extract_X_y_for_one_session(gestures, PLOT_RANDOM_DATA):
     # Feature extraction : Mean normalization for all channels in each window
     mean_normalized_RMS=mean_normalization(ACTIVE_N_RMS_gestures)
     
-    global PLOT_RANDOM_DATA
     # Plot one data
     if PLOT_RANDOM_DATA==True:
         plot_some_data(mean_normalized_RMS,PLOTTING_METHOD)
