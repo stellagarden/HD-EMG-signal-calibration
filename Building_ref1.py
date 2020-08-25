@@ -17,7 +17,7 @@ from sklearn.preprocessing import MinMaxScaler
 WINDOW_SIZE = 150    # 20:9.76ms, 150:73.2ms
 TEST_RATIO = 0.3
 SEGMENT_N = 3
-PLOT_RANDOM_DATA = True
+PLOT_RANDOM_DATA = False
 PLOTTING_METHOD = 2     # 1(surface) or 2(colormap)
 PLOT_CONFUSION_MATRIX = True
 ACTUAL_COLUMN=24
