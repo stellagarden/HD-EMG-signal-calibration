@@ -202,8 +202,8 @@ def construct_X_y(mean_normalized_RMS):
     X=np.reshape(mean_normalized_RMS, (mean_normalized_RMS.shape[0]*mean_normalized_RMS.shape[1]*mean_normalized_RMS.shape[2], mean_normalized_RMS.shape[3]))
     y=np.array([])
     for i_ges in range(mean_normalized_RMS.shape[0]):
-        for j in range(mean_normalized_RMS.shape[1]):   # # of tries
-            for k in range(mean_normalized_RMS.shape[2]):  # # of Larege windows
+        for i in range(mean_normalized_RMS.shape[1]):   # # of tries
+            for j in range(mean_normalized_RMS.shape[2]):  # # of Larege windows
                 y=np.append(y, [i_ges])
     return X, y
 
