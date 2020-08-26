@@ -297,7 +297,6 @@ def extract_X_y_for_one_session(gestures, PLOT_RANDOM_DATA):
     # Plot one data
     if PLOT_RANDOM_DATA==True:
         plot_some_data(mean_normalized_RMS,PLOTTING_METHOD)
-        PLOT_RANDOM_DATA=False
 
     # Naive Bayes classifier : Construct X and y
     X, y = construct_X_y(mean_normalized_RMS)
