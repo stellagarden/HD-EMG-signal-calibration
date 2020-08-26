@@ -22,6 +22,7 @@ PLOTTING_METHOD = 2     # 1(surface) or 2(colormap)
 PLOT_CONFUSION_MATRIX = True
 ACTUAL_COLUMN=24
 ACTUAL_RAW=7
+IDLE_GESTURE_EXIST = True
 
 def load_mat_files(dataDir):
     mats = []
@@ -296,7 +297,6 @@ def extract_X_y_for_one_session(gestures, PLOT_RANDOM_DATA):
     # Plot one data
     if PLOT_RANDOM_DATA==True:
         plot_some_data(mean_normalized_RMS,PLOTTING_METHOD)
-        PLOT_RANDOM_DATA=False
 
     # Naive Bayes classifier : Construct X and y
     X, y = construct_X_y(mean_normalized_RMS)
@@ -309,10 +309,12 @@ def main():
         if i_session==0:
             sessions=np.array([load_mat_files(path)])
             #In idle gesture, we just use 2,4,7,8,11,13,19,25,26,30th tries in order to match the number of datas
-            sessions[i_session][0]=sessions[i_session][0][[1,3,6,7,10,12,18,24,25,29]]
+            if IDLE_GESTURE_EXIST == True:
+                sessions[i_session][0]=sessions[i_session][0][[1,3,6,7,10,12,18,24,25,29]]
             continue
         sessions=np.append(sessions, [load_mat_files(path)], axis=0)
-        sessions[i_session][0]=sessions[i_session][0][[1,3,6,7,10,12,18,24,25,29]]
+        if IDLE_GESTURE_EXIST == True:
+            sessions[i_session][0]=sessions[i_session][0][[1,3,6,7,10,12,18,24,25,29]]
 
     init_session=1
     for session in sessions:
