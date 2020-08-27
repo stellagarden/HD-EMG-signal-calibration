@@ -6,7 +6,7 @@ import numpy as np
 from math import sqrt
 
 # load the data
-mat = sio.loadmat('../subject5/session3/gest11.mat')
+mat = sio.loadmat('./data/ref1_subject1_session4/gest7.mat')
 gestures = mat['gestures']
 
 #compute RMS
