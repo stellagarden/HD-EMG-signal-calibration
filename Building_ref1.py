@@ -272,10 +272,7 @@ def extract_X_y_for_one_session(gestures):
             # Segmentation : Data processing : Divide continuous data into 150 samples window
             gestures[i_ges, i_try, 0]=np.delete(gestures[i_ges, i_try, 0], list(range((gestures[i_ges, i_try, 0].shape[1]//WINDOW_SIZE)*WINDOW_SIZE, gestures[i_ges, i_try, 0].shape[1])), 1)
             gestures[i_ges, i_try, 0]=np.reshape(gestures[i_ges, i_try, 0],(gestures[i_ges, i_try, 0].shape[0], gestures[i_ges, i_try, 0].shape[1]//WINDOW_SIZE, WINDOW_SIZE))
-            
-    return np.reshape(pre_processed_one_try, (pre_processed_one_try.shape[0],-1,WINDOW_SIZE))
-
-    
+                
     # Segmentation : Compute RMS
     RMS_gestures=compute_RMS_gestures(pre_processed_gestures)
     # Segmentation : Base normalization
