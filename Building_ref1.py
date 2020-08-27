@@ -63,37 +63,16 @@ def plot_bandpass_filtered_data(data):
     plt.legend(loc='upper left')
     plt.show()
 
-def divide_to_windows(datas, window_size=WINDOW_SIZE):
-    windows=np.delete(datas, list(range((len(datas)//window_size)*window_size,len(datas))))
-    windows=np.reshape(windows,((len(datas)//window_size,window_size)))
-    return windows
-
 def compute_RMS(datas):
     return np.sqrt(np.mean(np.array(datas)**2))
 
 def compute_RMS_gestures(gestures):
-    RMS_gestures=np.array([[[[0.0 for i_ch in range(gestures.shape[3])] for i_win in range(gestures.shape[2])] for i_try in range(gestures.shape[1])] for i_ges in range(gestures.shape[0])])
     for i_ges in range(gestures.shape[0]):
         for i_try in range(gestures.shape[1]):
             for i_win in range(gestures.shape[2]):
                 for i_ch in range(gestures.shape[3]):
                     RMS_gestures[i_ges][i_try][i_win][i_ch]=compute_RMS(gestures[i_ges][i_try][i_win][i_ch])
     return RMS_gestures
-
-def create_168_dimensional_window_vectors(channels):
-    for i_ch in range(len(channels)):
-        # Segmentation : Data processing : Discard useless data
-        if (i_ch+1)%8 == 0:
-            continue
-        # Preprocessing : Apply butterworth band-pass filter]
-        filtered_channel=butter_bandpass_filter(channels[i_ch])
-        # Segmentation : Data processing : Divide continuous data into 150 samples window
-        windows_per_channel=divide_to_windows(filtered_channel)     # windows_per_channel : (40, 150)
-        if i_ch==0:
-            pre_processed_one_try=np.array(windows_per_channel)
-            continue
-        pre_processed_one_try=np.append(pre_processed_one_try, windows_per_channel, axis=1) # Adding column
-    return np.reshape(pre_processed_one_try, (pre_processed_one_try.shape[0],-1,WINDOW_SIZE))
 
 def average_for_channel(gesture):
     average=np.array([])
@@ -266,15 +245,16 @@ def extract_X_y_for_one_session(gestures):
     for i_ges in range(gestures.shape[0]):
         for i_try in range(gestures.shape[1]):
             # Segmentation : Data processing : Discard useless data
-            gestures[i_ges, i_try, 0] = np.delete(gestures[i_ges, i_try, 0],np.s_[7:192:8],0)
+            gestures[i_ges, i_try, 0]=np.delete(gestures[i_ges, i_try, 0],np.s_[7:192:8],0)
             # Preprocessing : Apply butterworth band-pass filter
-            gestures[i_ges, i_try, 0] = butter_bandpass_filter(gestures[i_ges, i_try, 0])
+            gestures[i_ges, i_try, 0]=butter_bandpass_filter(gestures[i_ges, i_try, 0])
             # Segmentation : Data processing : Divide continuous data into 150 samples window
             gestures[i_ges, i_try, 0]=np.delete(gestures[i_ges, i_try, 0], list(range((gestures[i_ges, i_try, 0].shape[1]//WINDOW_SIZE)*WINDOW_SIZE, gestures[i_ges, i_try, 0].shape[1])), 1)
             gestures[i_ges, i_try, 0]=np.reshape(gestures[i_ges, i_try, 0],(gestures[i_ges, i_try, 0].shape[0], gestures[i_ges, i_try, 0].shape[1]//WINDOW_SIZE, WINDOW_SIZE))
-                
+
+    #################################### FROM HERE #########################################
     # Segmentation : Compute RMS
-    RMS_gestures=compute_RMS_gestures(pre_processed_gestures)
+    RMS_gestures=compute_RMS_gestures(gestures)
     # Segmentation : Base normalization
     RMS_gestures=base_normalization(RMS_gestures)
     # Segmentation : Median filtering
