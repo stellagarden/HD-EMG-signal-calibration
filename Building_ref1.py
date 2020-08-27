@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import random
 import pandas as pd
+import glob
 from mpl_toolkits import mplot3d
 from scipy import io
 from scipy.signal import butter, lfilter, freqz
@@ -25,10 +26,22 @@ ACTUAL_RAW=7
 IDLE_GESTURE_EXIST = True
 
 def load_mat_files(dataDir):
-    mats = []
-    for file in os.listdir(dataDir):
-        mats.append(io.loadmat(dataDir+file)['gestures'])
-    return mats
+    pathname=dataDir + "/**/*.mat"
+    files = glob.glob(pathname, recursive=True)
+    sessions=dict()
+    #In idle gesture, we just use 2,4,7,8,11,13,19,25,26,30th tries in order to match the number of datas
+    for one_file in files:
+        session_name=one_file.split("\\")[-2]
+        if not session_name in sessions:
+            if one_file[-5:]=="0.mat" and IDLE_GESTURE_EXIST == True:
+                sessions[session_name]=np.array([io.loadmat(one_file)['gestures'][[1,3,6,7,10,12,18,24,25,29]]])
+            else: sessions[session_name]=np.array([io.loadmat(one_file)['gestures']])
+            continue
+        if one_file[-5:]=="0.mat" and IDLE_GESTURE_EXIST == True:
+            sessions[session_name]=np.append(sessions[session_name], [io.loadmat(one_file)['gestures'][[1,3,6,7,10,12,18,24,25,29]]], axis=0)
+            continue
+        sessions[session_name]=np.append(sessions[session_name], [io.loadmat(one_file)['gestures']], axis=0)
+    return sessions
 
 def butter_bandpass_filter(data, lowcut=20.0, highcut=400.0, fs=2048, order=4):
     nyq = 0.5 * fs
@@ -303,23 +316,12 @@ def extract_X_y_for_one_session(gestures, PLOT_RANDOM_DATA):
     return X, y
 
 def main():
-    n_sessions=len(next(os.walk('./data/'))[1])
-    for i_session in range(n_sessions):
-        path="./data/ref1_subject1_session"+str(i_session)+"/"
-        if i_session==0:
-            sessions=np.array([load_mat_files(path)])
-            #In idle gesture, we just use 2,4,7,8,11,13,19,25,26,30th tries in order to match the number of datas
-            if IDLE_GESTURE_EXIST == True:
-                sessions[i_session][0]=sessions[i_session][0][[1,3,6,7,10,12,18,24,25,29]]
-            continue
-        sessions=np.append(sessions, [load_mat_files(path)], axis=0)
-        if IDLE_GESTURE_EXIST == True:
-            sessions[i_session][0]=sessions[i_session][0][[1,3,6,7,10,12,18,24,25,29]]
-
+    sessions=load_mat_files("./data/")  # Dict : sessions
     init_session=1
-    for session in sessions:
+    for session in sessions.values():
         # Input data for each session
         X_session, y_session=extract_X_y_for_one_session(session, PLOT_RANDOM_DATA)
+        print("Processing...")
         if init_session==1:
             X=np.array(X_session)
             y=np.array(y_session)
