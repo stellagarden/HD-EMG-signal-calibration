@@ -308,11 +308,16 @@ def extract_X_y_for_one_session(gestures, PLOT_RANDOM_DATA):
     X, y = construct_X_y(mean_normalized_RMS)
     return X, y
 
+def plot_ch(i_gest,i_try,i_ch):
+    plt.plot(session[4][5][0][89,:])
+    plt.show()
+
 def main():
     sessions=load_mat_files("./data/")  # Dict : sessions
     init_session=1
     for session in sessions.values():
         # Input data for each session
+        plot_ch(4,5,89)
         X_session, y_session=extract_X_y_for_one_session(session, PLOT_RANDOM_DATA)
         print("Processing...")
         if init_session==1:
