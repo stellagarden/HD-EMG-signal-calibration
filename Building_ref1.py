@@ -261,33 +261,18 @@ def plot_some_data(gestures):
     plt.tight_layout()
     plt.show()
 
-def extract_X_y_for_one_session(gestures, PLOT_RANDOM_DATA):
+def extract_X_y_for_one_session(gestures):
     # Signal Pre-processing & Construct windows
-    for i in range(gestures.shape[0]):
-        for j in range(gestures.shape[1]):
-            for k in range(gestures.shape[2]):
-                if i==0 and j==0 and k==0:
-                    match=gestures[i][j][k].shape
-                    print("match is :", match)
-                    continue
-                if match!=gestures[i][j][k].shape:
-                    print("Doesn't match: ",i,j,k, end=",")
-                    print(gestures[i][j][k].shape)
-                    
-    gestures = np.delete(gestures[:,:,:],np.s_[7:192:8],0)
-
-    for i_ch in range(len(channels)):
-        # Segmentation : Data processing : Discard useless data
-        if (i_ch+1)%8 == 0:
-            continue
-        # Preprocessing : Apply butterworth band-pass filter]
-        filtered_channel=butter_bandpass_filter(channels[i_ch])
-        # Segmentation : Data processing : Divide continuous data into 150 samples window
-        windows_per_channel=divide_to_windows(filtered_channel)     # windows_per_channel : (40, 150)
-        if i_ch==0:
-            pre_processed_one_try=np.array(windows_per_channel)
-            continue
-        pre_processed_one_try=np.append(pre_processed_one_try, windows_per_channel, axis=1) # Adding column
+    for i_ges in range(gestures.shape[0]):
+        for i_try in range(gestures.shape[1]):
+            # Segmentation : Data processing : Discard useless data
+            gestures[i_ges, i_try, 0] = np.delete(gestures[i_ges, i_try, 0],np.s_[7:192:8],0)
+            # Preprocessing : Apply butterworth band-pass filter
+            gestures[i_ges, i_try, 0] = butter_bandpass_filter(gestures[i_ges, i_try, 0])
+            # Segmentation : Data processing : Divide continuous data into 150 samples window
+            gestures[i_ges, i_try, 0]=np.delete(gestures[i_ges, i_try, 0], list(range((gestures[i_ges, i_try, 0].shape[1]//WINDOW_SIZE)*WINDOW_SIZE, gestures[i_ges, i_try, 0].shape[1])), 1)
+            gestures[i_ges, i_try, 0]=np.reshape(gestures[i_ges, i_try, 0],(gestures[i_ges, i_try, 0].shape[0], gestures[i_ges, i_try, 0].shape[1]//WINDOW_SIZE, WINDOW_SIZE))
+            
     return np.reshape(pre_processed_one_try, (pre_processed_one_try.shape[0],-1,WINDOW_SIZE))
 
     
@@ -321,7 +306,7 @@ def extract_X_y_for_one_session(gestures, PLOT_RANDOM_DATA):
     return X, y
 
 def plot_ch(data,i_gest,i_try,i_ch):
-    plt.plot(data[4][5][0][89,:])
+    plt.plot(data[i_gest][5][0][89,:])
     plt.show()
 
 def main():
@@ -329,8 +314,7 @@ def main():
     init_session=1
     for session in sessions.values():
         # Input data for each session
-        # plot_ch(session,4,5,89)
-        X_session, y_session=extract_X_y_for_one_session(session, PLOT_RANDOM_DATA)
+        X_session, y_session=extract_X_y_for_one_session(session)
         print("Processing...")
         if init_session==1:
             X=np.array(X_session)
