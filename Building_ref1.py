@@ -302,14 +302,11 @@ def extract_X_y_for_one_session(gestures, PLOT_RANDOM_DATA):
     
     # Plot one data
     if PLOT_RANDOM_DATA==True:
-        plot_some_data(mean_normalized_RMS,PLOTTING_METHOD)
+        plot_some_data(mean_normalized_RMS)
 
     # Naive Bayes classifier : Construct X and y
     X, y = construct_X_y(mean_normalized_RMS)
     return X, y
-
-def plot
-
 
 def main():
     sessions=load_mat_files("./data/")  # Dict : sessions
