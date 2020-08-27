@@ -8,7 +8,7 @@ from math import sqrt
 # load the data
 mat = sio.loadmat('../subject5/session3/gest11.mat')
 gestures = mat['gestures']
-5
+
 #compute RMS
 rms = np.zeros(168)
 for i in range(0,10):
