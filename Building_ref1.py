@@ -19,7 +19,6 @@ WINDOW_SIZE = 150    # 20:9.76ms, 150:73.2ms
 TEST_RATIO = 0.3
 SEGMENT_N = 3
 PLOT_RANDOM_DATA = False
-PLOTTING_METHOD = 2     # 1(surface) or 2(colormap)
 PLOT_CONFUSION_MATRIX = True
 ACTUAL_COLUMN=24
 ACTUAL_RAW=7
@@ -242,7 +241,7 @@ def check_segment_len(ACTIVE_RMS_gestures):
             print(len(ACTIVE_RMS_gestures[i][j]), end=' ')
         print()
 
-def plot_some_data(gestures,PLOTTING_METHOD):
+def plot_some_data(gestures):
     # Choose random three data
     chose=[]
     for i in range(3):
@@ -253,18 +252,12 @@ def plot_some_data(gestures,PLOTTING_METHOD):
     # Plot
     y,x=np.meshgrid(range(ACTUAL_RAW),range(ACTUAL_COLUMN))
     fig, ax = plt.subplots(nrows=3)
-    if PLOTTING_METHOD==1:
-        plt.axes(projection='3d').plot_surface(x, y, np.reshape(gestures[chose[0][0]][chose[0][1]][chose[0][2]], (ACTUAL_COLUMN, ACTUAL_RAW)), cmap='jet')
-        plt.title("%dth active window in %dth try in %dth gesture" %(chose[0][2], chose[0][1], chose[0][0]))
-    elif PLOTTING_METHOD==2:
-        im=[]
-        for i in range(len(chose)):
-            df = pd.DataFrame({"x":x.flatten(), "y":y.flatten(),"value":gestures[chose[i][0]][chose[i][1]][chose[i][2]].flatten()}).pivot(index="y", columns="x", values="value")
-            im.append(ax[i].imshow(df.values, cmap="viridis", vmin=0, vmax=1))
-            ax[i].set_title("%dth active window in %dth try in %dth gesture" %(chose[i][2], chose[i][1], chose[i][0]))
-            fig.colorbar(im[i], ax=ax[i])
-    else:
-        raise ValueError("Plotting method can only be 1 or 2.")
+    im=[]
+    for i in range(len(chose)):
+        df = pd.DataFrame({"x":x.flatten(), "y":y.flatten(),"value":gestures[chose[i][0]][chose[i][1]][chose[i][2]].flatten()}).pivot(index="y", columns="x", values="value")
+        im.append(ax[i].imshow(df.values, cmap="viridis", vmin=0, vmax=1))
+        ax[i].set_title("%dth active window in %dth try in %dth gesture" %(chose[i][2], chose[i][1], chose[i][0]))
+        fig.colorbar(im[i], ax=ax[i])
     plt.tight_layout()
     plt.show()
 
@@ -314,6 +307,9 @@ def extract_X_y_for_one_session(gestures, PLOT_RANDOM_DATA):
     # Naive Bayes classifier : Construct X and y
     X, y = construct_X_y(mean_normalized_RMS)
     return X, y
+
+def plot
+
 
 def main():
     sessions=load_mat_files("./data/")  # Dict : sessions
