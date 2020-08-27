@@ -263,22 +263,34 @@ def plot_some_data(gestures):
 
 def extract_X_y_for_one_session(gestures, PLOT_RANDOM_DATA):
     # Signal Pre-processing & Construct windows
-    init_gesture=1
-    for gesture in gestures:
-        init_try=1
-        for one_try in gesture:
-            pre_processed_one_try = create_168_dimensional_window_vectors(one_try[0]) # one_try[0] : channels, ndarray
-            if init_try == 1:
-                pre_processed_tries_for_gesture = np.array([pre_processed_one_try])
-                init_try=0
-                continue
-            pre_processed_tries_for_gesture = np.append(pre_processed_tries_for_gesture, [pre_processed_one_try], axis=0)    # Adding height
-        if init_gesture==1:
-            pre_processed_gestures = np.array([pre_processed_tries_for_gesture])
-            init_gesture=0
-            continue
-        pre_processed_gestures = np.append(pre_processed_gestures, [pre_processed_tries_for_gesture], axis=0)   # Adding blocks
+    for i in range(gestures.shape[0]):
+        for j in range(gestures.shape[1]):
+            for k in range(gestures.shape[2]):
+                if i==0 and j==0 and k==0:
+                    match=gestures[i][j][k].shape
+                    print("match is :", match)
+                    continue
+                if match!=gestures[i][j][k].shape:
+                    print("Doesn't match: ",i,j,k, end=",")
+                    print(gestures[i][j][k].shape)
+                    
+    gestures = np.delete(gestures[:,:,:],np.s_[7:192:8],0)
 
+    for i_ch in range(len(channels)):
+        # Segmentation : Data processing : Discard useless data
+        if (i_ch+1)%8 == 0:
+            continue
+        # Preprocessing : Apply butterworth band-pass filter]
+        filtered_channel=butter_bandpass_filter(channels[i_ch])
+        # Segmentation : Data processing : Divide continuous data into 150 samples window
+        windows_per_channel=divide_to_windows(filtered_channel)     # windows_per_channel : (40, 150)
+        if i_ch==0:
+            pre_processed_one_try=np.array(windows_per_channel)
+            continue
+        pre_processed_one_try=np.append(pre_processed_one_try, windows_per_channel, axis=1) # Adding column
+    return np.reshape(pre_processed_one_try, (pre_processed_one_try.shape[0],-1,WINDOW_SIZE))
+
+    
     # Segmentation : Compute RMS
     RMS_gestures=compute_RMS_gestures(pre_processed_gestures)
     # Segmentation : Base normalization
@@ -308,8 +320,8 @@ def extract_X_y_for_one_session(gestures, PLOT_RANDOM_DATA):
     X, y = construct_X_y(mean_normalized_RMS)
     return X, y
 
-def plot_ch(i_gest,i_try,i_ch):
-    plt.plot(session[4][5][0][89,:])
+def plot_ch(data,i_gest,i_try,i_ch):
+    plt.plot(data[4][5][0][89,:])
     plt.show()
 
 def main():
@@ -317,7 +329,7 @@ def main():
     init_session=1
     for session in sessions.values():
         # Input data for each session
-        plot_ch(4,5,89)
+        # plot_ch(session,4,5,89)
         X_session, y_session=extract_X_y_for_one_session(session, PLOT_RANDOM_DATA)
         print("Processing...")
         if init_session==1:
