@@ -242,6 +242,13 @@ def plot_some_data(gestures):
 
 def extract_X_y_for_one_session(gestures):
     # Signal Pre-processing & Construct windows
+    list_gestures=gestures.tolist()
+    for i_ges in range(len(list_gestures)):
+        for i_try in range(len(list_gestures[i_ges])):
+            for i_ch in range(len(list_gestures[i_ges][i_try][0])):
+                list_gestures[i_ges][i_try].append(np.array(list_gestures[i_ges][i_try][0][i_ch]))
+    RMS_gestures=np.delete(np.array(list_gestures), 0, 2)
+
     for i_ges in range(gestures.shape[0]):
         for i_try in range(gestures.shape[1]):
             # Segmentation : Data processing : Discard useless data
@@ -292,7 +299,7 @@ def main():
     for session in sessions.values():
         # Input data for each session
         X_session, y_session=extract_X_y_for_one_session(session)
-        print("Processing...")
+        print("Processing...%d" %(sessions.values().index(session)))
         if init_session==1:
             X=np.array(X_session)
             y=np.array(y_session)
