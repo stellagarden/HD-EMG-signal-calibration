@@ -1,5 +1,4 @@
 {
-    "powermode.enabled": true,
     "powermode.presets": "fireworks",
     "powermode.enableShake": false
 }
