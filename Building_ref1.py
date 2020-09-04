@@ -50,48 +50,13 @@ def butter_bandpass_filter(data, lowcut=20.0, highcut=400.0, fs=2048, order=4):
     y = lfilter(b, a, data)
     return y
 
-def plot_bandpass_filtered_data(data):
-    plt.figure(1)
-    plt.clf()
-    plt.plot(data, label='Noisy signal')
- 
-    y = butter_bandpass_filter(data)
-    plt.plot(y, label='Filtered signal')
-    plt.xlabel('time (seconds)')
-    plt.grid(True)
-    plt.axis()
-    plt.legend(loc='upper left')
-    plt.show()
-
 def compute_RMS(datas):
     return np.sqrt(np.mean(np.array(datas)**2))
 
-def compute_RMS_gestures(gestures):
-    for i_ges in range(gestures.shape[0]):
-        for i_try in range(gestures.shape[1]):
-            for i_win in range(gestures.shape[2]):
-                for i_ch in range(gestures.shape[3]):
-                    RMS_gestures[i_ges][i_try][i_win][i_ch]=compute_RMS(gestures[i_ges][i_try][i_win][i_ch])
-    return RMS_gestures
-
-def average_for_channel(gesture):
-    average=np.array([])
-    for i_ch in range(gesture.shape[2]):
-        sum=0
-        for i_win in range(gesture.shape[1]):
-            for i_try in range(gesture.shape[0]):
-                sum+=gesture[i_try][i_win][i_ch]
-        average=np.append(average, [sum/(gesture.shape[1]*gesture.shape[0])])
-    return average
-
 def base_normalization(RMS_gestures):
-    average_channel_idle_gesture=average_for_channel(RMS_gestures[0])
-    for i_ges in range(RMS_gestures.shape[0]):   # Including idle gesture
-        for i_try in range(RMS_gestures.shape[1]):
-            for i_win in range(RMS_gestures.shape[2]):
-                for i_ch in range(RMS_gestures.shape[3]):
-                    RMS_gestures[i_ges][i_try][i_win][i_ch]-=average_channel_idle_gesture[i_ch]
-    return RMS_gestures
+    # Compute mean value of each channel of idle gesture
+    average_channel_idle_gesture=np.mean(np.mean(RMS_gestures[0], 2), 0)
+    return np.transpose(np.transpose(RMS_gestures, (0,1,3,2))-average_channel_idle_gesture, (0,1,3,2))
 
 def extract_ACTIVE_window_i(RMS_gestures):
     for i_ges in range(len(RMS_gestures)):
@@ -206,13 +171,6 @@ def plot_confusion_matrix(y_test, kinds, y_pred):
     plt.axis('auto')
     plt.show()
 
-def check(x, prin=0):
-    print("length: ", len(x))
-    print("type: ", type(x))
-    if type(x) == type(np.array([])): print("shape: ", x.shape)
-    if prin==1: print(x)
-    raise ValueError("-------------WORKING LINE--------------")
-
 def check_segment_len(ACTIVE_RMS_gestures):
     for i in range(len(ACTIVE_RMS_gestures)):
         print("%d번째 gesture의 각 try의 segment 길이들 : " %i, end='')
@@ -249,30 +207,33 @@ def extract_X_y_for_one_session(pre_gestures):
     gestures=np.array(gestures)
 
     # Signal Pre-processing & Construct windows
-    # Segmentation : Data processing : Discard useless data
+    ## Segmentation : Data processing : Discard useless data
     gestures=np.delete(gestures,np.s_[7:192:8],2)
-    plot_ch(gestures, 4, 6, 80)
-    # Preprocessing : Apply butterworth band-pass filter
+    # plot_ch(gestures, 4, 6, 80)
+    ## Preprocessing : Apply butterworth band-pass filter
     gestures=np.apply_along_axis(butter_bandpass_filter, 2, gestures)
-    plot_ch(gestures, 4, 6, 80)
-    # Segmentation : Data processing : Divide continuous data into 150 samples window
-    gestures=np.delete(gestures, list(range((gestures.shape[3]//WINDOW_SIZE)*WINDOW_SIZE, gestures.shape[3])), 3)
-    gestures=np.reshape(gestures,(gestures.shape[2], gestures.shape[3]//WINDOW_SIZE, WINDOW_SIZE))
+    # plot_ch(gestures, 4, 6, 80)
+    ## Segmentation : Data processing : Divide continuous data into 150 samples window
+    gestures=np.delete(gestures, np.s_[(gestures.shape[3]//WINDOW_SIZE)*WINDOW_SIZE:], 3)
+    gestures=np.reshape(gestures,(gestures.shape[0], gestures.shape[1], gestures.shape[2], gestures.shape[3]//WINDOW_SIZE, WINDOW_SIZE))
     
-    #################################### FROM HERE #########################################
-    # Segmentation : Compute RMS
-    RMS_gestures=compute_RMS_gestures(gestures)
-    # Segmentation : Base normalization
+    # Determine ACTIVE windows
+    ## Segmentation : Compute RMS
+    RMS_gestures=gestures.copy()
+    RMS_gestures=np.apply_along_axis(compute_RMS, 4, RMS_gestures)
+    ## Segmentation : Base normalization
+    plt.imshow(RMS_gestures[4,6], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
+    plt.show()
     RMS_gestures=base_normalization(RMS_gestures)
-    # Segmentation : Median filtering
-    for i_ges in range(len(RMS_gestures)):
-        for i_try in range(len(RMS_gestures[i_ges])):
-            channels=RMS_gestures[i_ges][i_try].transpose()
-            for i_ch in range(len(channels)):
-                channels[i_ch]=medfilt(channels[i_ch])
-            RMS_gestures[i_ges][i_try]=channels.transpose()
-    # Segmentation : Dertermine which window is ACTIVE
+    plt.imshow(RMS_gestures[4,6], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
+    plt.show()
+    ## Segmentation : Median filtering
+    RMS_gestures=np.apply_along_axis(medfilt, 4, RMS_gestures)
+    plt.imshow(RMS_gestures[4,6], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
+    plt.show()
+    ## Segmentation : Dertermine which window is ACTIVE
     i_ACTIVE_windows=extract_ACTIVE_window_i(RMS_gestures.tolist())
+
 
     # Feature extraction : Filter only ACTIVE windows
     ACTIVE_pre_processed_gestures=ACTIVE_filter(i_ACTIVE_windows, pre_processed_gestures)
