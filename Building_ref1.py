@@ -240,15 +240,15 @@ def plot_some_data(gestures):
     plt.tight_layout()
     plt.show()
 
-def extract_X_y_for_one_session(gestures):
-    # Signal Pre-processing & Construct windows
-    list_gestures=gestures.tolist()
-    for i_ges in range(len(list_gestures)):
-        for i_try in range(len(list_gestures[i_ges])):
-            for i_ch in range(len(list_gestures[i_ges][i_try][0])):
-                list_gestures[i_ges][i_try].append(np.array(list_gestures[i_ges][i_try][0][i_ch]))
-    gestures=np.delete(np.array(list_gestures), 0, 2)
+def extract_X_y_for_one_session(pre_gestures):
+    # Especially for Ref1, data reshaping into one array
+    gestures=np.zeros((pre_gestures.shape[0], pre_gestures.shape[1])).tolist()      #CONSTANT
+    for i_ges in range(len(pre_gestures)):
+        for i_try in range(len(pre_gestures[i_ges])):
+            gestures[i_ges][i_try]=pre_gestures[i_ges][i_try][0].copy()
+    gestures=np.array(gestures)
 
+    # Signal Pre-processing & Construct windows
     for i_ges in range(gestures.shape[0]):
         for i_try in range(gestures.shape[1]):
             # Segmentation : Data processing : Discard useless data
@@ -258,7 +258,7 @@ def extract_X_y_for_one_session(gestures):
             # Segmentation : Data processing : Divide continuous data into 150 samples window
             gestures[i_ges, i_try, 0]=np.delete(gestures[i_ges, i_try, 0], list(range((gestures[i_ges, i_try, 0].shape[1]//WINDOW_SIZE)*WINDOW_SIZE, gestures[i_ges, i_try, 0].shape[1])), 1)
             gestures[i_ges, i_try, 0]=np.reshape(gestures[i_ges, i_try, 0],(gestures[i_ges, i_try, 0].shape[0], gestures[i_ges, i_try, 0].shape[1]//WINDOW_SIZE, WINDOW_SIZE))
-
+    
     #################################### FROM HERE #########################################
     # Segmentation : Compute RMS
     RMS_gestures=compute_RMS_gestures(gestures)
@@ -289,8 +289,8 @@ def extract_X_y_for_one_session(gestures):
     X, y = construct_X_y(mean_normalized_RMS)
     return X, y
 
-def plot_ch(data,i_gest,i_try,i_ch):
-    plt.plot(data[i_gest][5][0][89,:])
+def plot_ch(data,i_gest,i_try=5,i_ch=89):
+    plt.plot(data[i_gest][i_try][i_ch,:])
     plt.show()
 
 def main():
