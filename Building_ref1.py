@@ -249,15 +249,15 @@ def extract_X_y_for_one_session(pre_gestures):
     gestures=np.array(gestures)
 
     # Signal Pre-processing & Construct windows
-    for i_ges in range(gestures.shape[0]):
-        for i_try in range(gestures.shape[1]):
-            # Segmentation : Data processing : Discard useless data
-            gestures[i_ges, i_try, 0]=np.delete(gestures[i_ges, i_try, 0],np.s_[7:192:8],0)
-            # Preprocessing : Apply butterworth band-pass filter
-            gestures[i_ges, i_try, 0]=butter_bandpass_filter(gestures[i_ges, i_try, 0])
-            # Segmentation : Data processing : Divide continuous data into 150 samples window
-            gestures[i_ges, i_try, 0]=np.delete(gestures[i_ges, i_try, 0], list(range((gestures[i_ges, i_try, 0].shape[1]//WINDOW_SIZE)*WINDOW_SIZE, gestures[i_ges, i_try, 0].shape[1])), 1)
-            gestures[i_ges, i_try, 0]=np.reshape(gestures[i_ges, i_try, 0],(gestures[i_ges, i_try, 0].shape[0], gestures[i_ges, i_try, 0].shape[1]//WINDOW_SIZE, WINDOW_SIZE))
+    # Segmentation : Data processing : Discard useless data
+    gestures=np.delete(gestures,np.s_[7:192:8],2)
+    plot_ch(gestures, 4, 6, 80)
+    # Preprocessing : Apply butterworth band-pass filter
+    gestures=np.apply_along_axis(butter_bandpass_filter, 2, gestures)
+    plot_ch(gestures, 4, 6, 80)
+    # Segmentation : Data processing : Divide continuous data into 150 samples window
+    gestures=np.delete(gestures, list(range((gestures.shape[3]//WINDOW_SIZE)*WINDOW_SIZE, gestures.shape[3])), 3)
+    gestures=np.reshape(gestures,(gestures.shape[2], gestures.shape[3]//WINDOW_SIZE, WINDOW_SIZE))
     
     #################################### FROM HERE #########################################
     # Segmentation : Compute RMS
