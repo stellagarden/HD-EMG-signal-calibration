@@ -247,7 +247,7 @@ def extract_X_y_for_one_session(gestures):
         for i_try in range(len(list_gestures[i_ges])):
             for i_ch in range(len(list_gestures[i_ges][i_try][0])):
                 list_gestures[i_ges][i_try].append(np.array(list_gestures[i_ges][i_try][0][i_ch]))
-    RMS_gestures=np.delete(np.array(list_gestures), 0, 2)
+    gestures=np.delete(np.array(list_gestures), 0, 2)
 
     for i_ges in range(gestures.shape[0]):
         for i_try in range(gestures.shape[1]):
