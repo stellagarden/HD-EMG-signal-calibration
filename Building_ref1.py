@@ -56,7 +56,8 @@ def compute_RMS(datas):
 def base_normalization(RMS_gestures):
     # Compute mean value of each channel of idle gesture
     average_channel_idle_gesture=np.mean(np.mean(RMS_gestures[0], 2), 0)
-    return np.transpose(np.transpose(RMS_gestures, (0,1,3,2))-average_channel_idle_gesture, (0,1,3,2))
+    # Subtract above value from every channel
+    return np.transpose(np.transpose(RMS_gestures,(0,1,3,2))-average_channel_idle_gesture,(0,1,3,2))
 
 def extract_ACTIVE_window_i(RMS_gestures):
     for i_ges in range(len(RMS_gestures)):
@@ -222,13 +223,13 @@ def extract_X_y_for_one_session(pre_gestures):
     RMS_gestures=gestures.copy()
     RMS_gestures=np.apply_along_axis(compute_RMS, 4, RMS_gestures)
     ## Segmentation : Base normalization
-    plt.imshow(RMS_gestures[4,6], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
-    plt.show()
+    # plt.imshow(RMS_gestures[4,6], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
+    # plt.show()
     RMS_gestures=base_normalization(RMS_gestures)
-    plt.imshow(RMS_gestures[4,6], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
-    plt.show()
+    # plt.imshow(RMS_gestures[4,6], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
+    # plt.show()
     ## Segmentation : Median filtering
-    RMS_gestures=np.apply_along_axis(medfilt, 4, RMS_gestures)
+    RMS_gestures=np.apply_along_axis(medfilt, 3, RMS_gestures)
     plt.imshow(RMS_gestures[4,6], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
     plt.show()
     ## Segmentation : Dertermine which window is ACTIVE
