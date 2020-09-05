@@ -23,7 +23,7 @@ PLOT_CONFUSION_MATRIX = True
 ACTUAL_COLUMN=24
 ACTUAL_RAW=7
 IDLE_GESTURE_EXIST = True
-PRINT_PROCESSING = True
+PLOT_PRINT_PROCESSING = False
 
 def load_mat_files(dataDir):
     pathname=dataDir + "/**/*.mat"
@@ -190,10 +190,10 @@ def extract_X_y_for_one_session(pre_gestures):
     # Signal Pre-processing & Construct windows
     ## Segmentation : Data processing : Discard useless data
     gestures=np.delete(gestures,np.s_[7:192:8],2)
-    plot_ch(gestures, 3, 2, 50)
+    if PLOT_PRINT_PROCESSING: plot_ch(gestures, 3, 2, 50)
     ## Preprocessing : Apply butterworth band-pass filter
     gestures=np.apply_along_axis(butter_bandpass_filter, 2, gestures)
-    plot_ch(gestures, 3, 2, 50)
+    if PLOT_PRINT_PROCESSING: plot_ch(gestures, 3, 2, 50)
     ## Segmentation : Data processing : Divide continuous data into 150 samples window
     gestures=np.delete(gestures, np.s_[(gestures.shape[3]//WINDOW_SIZE)*WINDOW_SIZE:], 3)
     gestures=np.reshape(gestures,(gestures.shape[0], gestures.shape[1], gestures.shape[2], gestures.shape[3]//WINDOW_SIZE, WINDOW_SIZE))
@@ -203,15 +203,18 @@ def extract_X_y_for_one_session(pre_gestures):
     RMS_gestures=gestures.copy()
     RMS_gestures=np.apply_along_axis(compute_RMS, 4, RMS_gestures)
     ## Segmentation : Base normalization
-    plt.imshow(RMS_gestures[3,2], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
-    plt.show()
+    if PLOT_PRINT_PROCESSING: 
+        plt.imshow(RMS_gestures[3,2], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
+        plt.show()
     RMS_gestures=base_normalization(RMS_gestures)
-    plt.imshow(RMS_gestures[3,2], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
-    plt.show()
+    if PLOT_PRINT_PROCESSING: 
+        plt.imshow(RMS_gestures[3,2], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
+        plt.show()
     ## Segmentation : Median filtering
     RMS_gestures=np.apply_along_axis(medfilt, 3, RMS_gestures)
-    plt.imshow(RMS_gestures[3,2], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
-    plt.show()
+    if PLOT_PRINT_PROCESSING: 
+        plt.imshow(RMS_gestures[3,2], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
+        plt.show()
     ## Segmentation : Dertermine which window is ACTIVE
     i_ACTIVE_windows=extract_ACTIVE_window_i(RMS_gestures)
 
