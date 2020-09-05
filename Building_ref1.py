@@ -23,6 +23,7 @@ PLOT_CONFUSION_MATRIX = True
 ACTUAL_COLUMN=24
 ACTUAL_RAW=7
 IDLE_GESTURE_EXIST = True
+PRINT_PROCESSING = True
 
 def load_mat_files(dataDir):
     pathname=dataDir + "/**/*.mat"
@@ -65,7 +66,7 @@ def extract_ACTIVE_window_i(RMS_gestures):
     sum_RMSs=np.sum(RMS_gestures,3)
     thresholds=np.reshape(np.repeat(np.sum(sum_RMSs,2)/sum_RMSs.shape[2], RMS_gestures.shape[2], axis=1),sum_RMSs.shape)
     ## Determine whether ACTIVE : Determining & Selecting the longest contiguous sequences
-    i_ACTIVE_windows=np.zeros((sum_RMSs.shape[:-1]+(2,)))
+    i_ACTIVE_windows=np.zeros((sum_RMSs.shape[:-1]+(2,))).tolist()
     sum_RMSs=sum_RMSs-thresholds
     for i_ges in range(sum_RMSs.shape[0]):
         for i_try in range(sum_RMSs.shape[1]):
@@ -83,9 +84,9 @@ def extract_ACTIVE_window_i(RMS_gestures):
                         MAX_contiguous=contiguous
                     else:
                         contiguous=0
-            i_ACTIVE_windows[i_ges, i_try, 0]=MAX_start
-            i_ACTIVE_windows[i_ges, i_try, 1]=MAX_contiguous
-    return i_ACTIVE_windows
+            i_ACTIVE_windows[i_ges][i_try][0]=MAX_start
+            i_ACTIVE_windows[i_ges][i_try][1]=MAX_contiguous
+    return np.array(i_ACTIVE_windows)
 
 def medfilt(channel, kernel_size=3):
     filtered=np.zeros(len(channel))
@@ -151,11 +152,11 @@ def plot_confusion_matrix(y_test, kinds, y_pred):
     plt.axis('auto')
     plt.show()
 
-def check_segment_len(ACTIVE_RMS_gestures):
-    for i in range(len(ACTIVE_RMS_gestures)):
+def check_segment_len(i_ACTIVE_windows):
+    for i in range(len(i_ACTIVE_windows)):
         print("%d번째 gesture의 각 try의 segment 길이들 : " %i, end='')
-        for j in range(len(ACTIVE_RMS_gestures[i])):
-            print(len(ACTIVE_RMS_gestures[i][j]), end=' ')
+        for j in range(len(i_ACTIVE_windows[i])):
+            print(i_ACTIVE_windows[i][j][1], end=' ')
         print()
 
 def plot_some_data(gestures):
@@ -240,7 +241,6 @@ def main():
     for session in sessions.values():
         # Input data for each session
         X_session, y_session=extract_X_y_for_one_session(session)
-        print("Processing...%d" %(sessions.values().index(session)))
         if init_session==1:
             X=np.array(X_session)
             y=np.array(y_session)
