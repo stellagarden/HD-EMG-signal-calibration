@@ -60,52 +60,31 @@ def base_normalization(RMS_gestures):
     return np.transpose(np.transpose(RMS_gestures,(0,1,3,2))-average_channel_idle_gesture,(0,1,3,2))
 
 def extract_ACTIVE_window_i(RMS_gestures):
-    for i_ges in range(len(RMS_gestures)):
-        for i_try in range(len(RMS_gestures[i_ges])):
-            # Segmentation : Determine whether ACTIVE : Compute summarized RMS
-            sum_RMSs=[sum(window) for window in RMS_gestures[i_ges][i_try]]
-            threshold=sum(sum_RMSs)/len(sum_RMSs)
-            # Segmentation : Determine whether ACTIVE
-            i_ACTIVEs=[]
-            for i_win in range(len(RMS_gestures[i_ges][i_try])):
-                if sum_RMSs[i_win] > threshold and i_win>0:     # Exclude 0th index
-                    i_ACTIVEs.append(i_win)
-            for i in range(len(i_ACTIVEs)):
-                if i==0:
-                    continue
-                if i_ACTIVEs[i]-i_ACTIVEs[i-1] == 2:
-                    i_ACTIVEs.insert(i, i_ACTIVEs[i-1]+1)
-            # Segmentation : Determine whether ACTIVE : Select the longest contiguous sequences
-            segs=[]
+    RMS_gestures=np.transpose(RMS_gestures,(0,1,3,2))
+    ## Determine whether ACTIVE : Compute summarized RMS
+    sum_RMSs=np.sum(RMS_gestures,3)
+    thresholds=np.reshape(np.repeat(np.sum(sum_RMSs,2)/sum_RMSs.shape[2], RMS_gestures.shape[2], axis=1),sum_RMSs.shape)
+    ## Determine whether ACTIVE : Determining & Selecting the longest contiguous sequences
+    i_ACTIVE_windows=np.zeros((sum_RMSs.shape[:-1]+(2,)))
+    sum_RMSs=sum_RMSs-thresholds
+    for i_ges in range(sum_RMSs.shape[0]):
+        for i_try in range(sum_RMSs.shape[1]):
             contiguous = 0
-            for i in range(len(i_ACTIVEs)):
-                if i == len(i_ACTIVEs)-1:
-                    if contiguous!=0:
-                        segs.append((start, contiguous))
-                    break
-                if i_ACTIVEs[i+1]-i_ACTIVEs[i] == 1:
-                    if contiguous == 0:
-                        start=i_ACTIVEs[i]
+            MAX_contiguous = 0
+            for i_win in range(sum_RMSs.shape[2]):
+                sandwitch=i_win!=0 and i_win!=sum_RMSs.shape[2]-1 and sum_RMSs[i_ges, i_try, i_win-1]>0 and sum_RMSs[i_ges, i_try, i_win+1]>0
+                if sum_RMSs[i_ges, i_try, i_win]>0 or sandwitch:
+                    if contiguous==0: i_start=i_win
                     contiguous+=1
-                else:
-                    if contiguous != 0:
-                        contiguous+=1
-                        segs.append((start, contiguous))
+                    if i_win!=sum_RMSs.shape[2]-1: continue
+                if contiguous!=0:
+                    if MAX_contiguous<contiguous:
+                        MAX_start=i_start
+                        MAX_contiguous=contiguous
+                    else:
                         contiguous=0
-            if len(segs)==0:
-                seg_start= sorted(i_ACTIVEs, reverse=True)[0]
-                seg_len=1
-            else:
-                seg_start, seg_len = sorted(segs, key=lambda seg: seg[1], reverse=True)[0]
-            # Segmentation : Return ACTIVE window indexes
-            if i_try==0:
-                i_one_try_ACTIVE = np.array([[seg_start, seg_len]])
-                continue
-            i_one_try_ACTIVE = np.append(i_one_try_ACTIVE, [[seg_start, seg_len]], axis=0)
-        if i_ges==0:
-            i_ACTIVE_windows = np.array([i_one_try_ACTIVE])
-            continue
-        i_ACTIVE_windows = np.append(i_ACTIVE_windows, [i_one_try_ACTIVE], axis=0)
+            i_ACTIVE_windows[i_ges, i_try, 0]=MAX_start
+            i_ACTIVE_windows[i_ges, i_try, 1]=MAX_contiguous
     return i_ACTIVE_windows
 
 def medfilt(channel, kernel_size=3):
@@ -232,14 +211,12 @@ def extract_X_y_for_one_session(pre_gestures):
     RMS_gestures=np.apply_along_axis(medfilt, 3, RMS_gestures)
     plt.imshow(RMS_gestures[3,2], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
     plt.show()
+    ## Segmentation : Dertermine which window is ACTIVE
+    i_ACTIVE_windows=extract_ACTIVE_window_i(RMS_gestures)
 
     ########################### WORKING LINE #############################
-    ## Segmentation : Dertermine which window is ACTIVE
-    i_ACTIVE_windows=extract_ACTIVE_window_i(RMS_gestures.tolist())
-
-
     # Feature extraction : Filter only ACTIVE windows
-    ACTIVE_pre_processed_gestures=ACTIVE_filter(i_ACTIVE_windows, pre_processed_gestures)
+    ACTIVE_pre_processed_gestures=ACTIVE_filter(i_ACTIVE_windows, gestures)
     # Feature extraction : Partition existing windows into N large windows and compute RMS for each large window
     ACTIVE_N_RMS_gestures=Repartition_N_Compute_RMS(ACTIVE_pre_processed_gestures, SEGMENT_N)
     # Feature extraction : Mean normalization for all channels in each window
