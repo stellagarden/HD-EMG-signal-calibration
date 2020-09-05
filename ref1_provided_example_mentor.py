@@ -11,7 +11,7 @@ num_gest = 27
 X = np.zeros((270, 168))
 y = np.zeros((270, 1))
 #plot data
-#fig, axes = plt.subplots(nrows=5, ncols=6)
+fig, axes = plt.subplots(nrows=5, ncols=6)
 gnb = GaussianNB()
 for gest in range(num_gest):
     print("Processing... %s"%(str(gest)))
@@ -32,13 +32,13 @@ for gest in range(num_gest):
 
     #reshaping to the correct shape
 
-    # rms = np.reshape(rms,(24,7))
-    # rms = np.flipud(np.transpose(rms))
+    rms = np.reshape(rms,(24,7))
+    rms = np.flipud(np.transpose(rms))
 
-#     axes[gest%5,gest%6].imshow(rms, cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
-#     axes[gest%5,gest%6].set_title(str(gest))
+    axes[gest%5,gest%6].imshow(rms, cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
+    axes[gest%5,gest%6].set_title(str(gest))
 
-# plt.show()
+plt.show()
 
 
 from sklearn.model_selection import train_test_split

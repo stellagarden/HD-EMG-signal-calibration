@@ -23,6 +23,7 @@ PLOT_CONFUSION_MATRIX = True
 ACTUAL_COLUMN=24
 ACTUAL_RAW=7
 IDLE_GESTURE_EXIST = True
+PRINT_PROCESSING = True
 
 def load_mat_files(dataDir):
     pathname=dataDir + "/**/*.mat"
@@ -50,118 +51,42 @@ def butter_bandpass_filter(data, lowcut=20.0, highcut=400.0, fs=2048, order=4):
     y = lfilter(b, a, data)
     return y
 
-def plot_bandpass_filtered_data(data):
-    plt.figure(1)
-    plt.clf()
-    plt.plot(data, label='Noisy signal')
- 
-    y = butter_bandpass_filter(data)
-    plt.plot(y, label='Filtered signal')
-    plt.xlabel('time (seconds)')
-    plt.grid(True)
-    plt.axis()
-    plt.legend(loc='upper left')
-    plt.show()
-
-def divide_to_windows(datas, window_size=WINDOW_SIZE):
-    windows=np.delete(datas, list(range((len(datas)//window_size)*window_size,len(datas))))
-    windows=np.reshape(windows,((len(datas)//window_size,window_size)))
-    return windows
-
 def compute_RMS(datas):
     return np.sqrt(np.mean(np.array(datas)**2))
 
-def compute_RMS_gestures(gestures):
-    RMS_gestures=np.array([[[[0.0 for i_ch in range(gestures.shape[3])] for i_win in range(gestures.shape[2])] for i_try in range(gestures.shape[1])] for i_ges in range(gestures.shape[0])])
-    for i_ges in range(gestures.shape[0]):
-        for i_try in range(gestures.shape[1]):
-            for i_win in range(gestures.shape[2]):
-                for i_ch in range(gestures.shape[3]):
-                    RMS_gestures[i_ges][i_try][i_win][i_ch]=compute_RMS(gestures[i_ges][i_try][i_win][i_ch])
-    return RMS_gestures
-
-def create_168_dimensional_window_vectors(channels):
-    for i_ch in range(len(channels)):
-        # Segmentation : Data processing : Discard useless data
-        if (i_ch+1)%8 == 0:
-            continue
-        # Preprocessing : Apply butterworth band-pass filter]
-        filtered_channel=butter_bandpass_filter(channels[i_ch])
-        # Segmentation : Data processing : Divide continuous data into 150 samples window
-        windows_per_channel=divide_to_windows(filtered_channel)     # windows_per_channel : (40, 150)
-        if i_ch==0:
-            pre_processed_one_try=np.array(windows_per_channel)
-            continue
-        pre_processed_one_try=np.append(pre_processed_one_try, windows_per_channel, axis=1) # Adding column
-    return np.reshape(pre_processed_one_try, (pre_processed_one_try.shape[0],-1,WINDOW_SIZE))
-
-def average_for_channel(gesture):
-    average=np.array([])
-    for i_ch in range(gesture.shape[2]):
-        sum=0
-        for i_win in range(gesture.shape[1]):
-            for i_try in range(gesture.shape[0]):
-                sum+=gesture[i_try][i_win][i_ch]
-        average=np.append(average, [sum/(gesture.shape[1]*gesture.shape[0])])
-    return average
-
 def base_normalization(RMS_gestures):
-    average_channel_idle_gesture=average_for_channel(RMS_gestures[0])
-    for i_ges in range(RMS_gestures.shape[0]):   # Including idle gesture
-        for i_try in range(RMS_gestures.shape[1]):
-            for i_win in range(RMS_gestures.shape[2]):
-                for i_ch in range(RMS_gestures.shape[3]):
-                    RMS_gestures[i_ges][i_try][i_win][i_ch]-=average_channel_idle_gesture[i_ch]
-    return RMS_gestures
+    # Compute mean value of each channel of idle gesture
+    average_channel_idle_gesture=np.mean(np.mean(RMS_gestures[0], 2), 0)
+    # Subtract above value from every channel
+    return np.transpose(np.transpose(RMS_gestures,(0,1,3,2))-average_channel_idle_gesture,(0,1,3,2))
 
 def extract_ACTIVE_window_i(RMS_gestures):
-    for i_ges in range(len(RMS_gestures)):
-        for i_try in range(len(RMS_gestures[i_ges])):
-            # Segmentation : Determine whether ACTIVE : Compute summarized RMS
-            sum_RMSs=[sum(window) for window in RMS_gestures[i_ges][i_try]]
-            threshold=sum(sum_RMSs)/len(sum_RMSs)
-            # Segmentation : Determine whether ACTIVE
-            i_ACTIVEs=[]
-            for i_win in range(len(RMS_gestures[i_ges][i_try])):
-                if sum_RMSs[i_win] > threshold and i_win>0:     # Exclude 0th index
-                    i_ACTIVEs.append(i_win)
-            for i in range(len(i_ACTIVEs)):
-                if i==0:
-                    continue
-                if i_ACTIVEs[i]-i_ACTIVEs[i-1] == 2:
-                    i_ACTIVEs.insert(i, i_ACTIVEs[i-1]+1)
-            # Segmentation : Determine whether ACTIVE : Select the longest contiguous sequences
-            segs=[]
+    RMS_gestures=np.transpose(RMS_gestures,(0,1,3,2))
+    ## Determine whether ACTIVE : Compute summarized RMS
+    sum_RMSs=np.sum(RMS_gestures,3)
+    thresholds=np.reshape(np.repeat(np.sum(sum_RMSs,2)/sum_RMSs.shape[2], RMS_gestures.shape[2], axis=1),sum_RMSs.shape)
+    ## Determine whether ACTIVE : Determining & Selecting the longest contiguous sequences
+    i_ACTIVE_windows=np.zeros((sum_RMSs.shape[:-1]+(2,))).tolist()
+    sum_RMSs=sum_RMSs-thresholds
+    for i_ges in range(sum_RMSs.shape[0]):
+        for i_try in range(sum_RMSs.shape[1]):
             contiguous = 0
-            for i in range(len(i_ACTIVEs)):
-                if i == len(i_ACTIVEs)-1:
-                    if contiguous!=0:
-                        segs.append((start, contiguous))
-                    break
-                if i_ACTIVEs[i+1]-i_ACTIVEs[i] == 1:
-                    if contiguous == 0:
-                        start=i_ACTIVEs[i]
+            MAX_contiguous = 0
+            for i_win in range(sum_RMSs.shape[2]):
+                sandwitch=i_win!=0 and i_win!=sum_RMSs.shape[2]-1 and sum_RMSs[i_ges, i_try, i_win-1]>0 and sum_RMSs[i_ges, i_try, i_win+1]>0
+                if sum_RMSs[i_ges, i_try, i_win]>0 or sandwitch:
+                    if contiguous==0: i_start=i_win
                     contiguous+=1
-                else:
-                    if contiguous != 0:
-                        contiguous+=1
-                        segs.append((start, contiguous))
+                    if i_win!=sum_RMSs.shape[2]-1: continue
+                if contiguous!=0:
+                    if MAX_contiguous<contiguous:
+                        MAX_start=i_start
+                        MAX_contiguous=contiguous
+                    else:
                         contiguous=0
-            if len(segs)==0:
-                seg_start= sorted(i_ACTIVEs, reverse=True)[0]
-                seg_len=1
-            else:
-                seg_start, seg_len = sorted(segs, key=lambda seg: seg[1], reverse=True)[0]
-            # Segmentation : Return ACTIVE window indexes
-            if i_try==0:
-                i_one_try_ACTIVE = np.array([[seg_start, seg_len]])
-                continue
-            i_one_try_ACTIVE = np.append(i_one_try_ACTIVE, [[seg_start, seg_len]], axis=0)
-        if i_ges==0:
-            i_ACTIVE_windows = np.array([i_one_try_ACTIVE])
-            continue
-        i_ACTIVE_windows = np.append(i_ACTIVE_windows, [i_one_try_ACTIVE], axis=0)
-    return i_ACTIVE_windows
+            i_ACTIVE_windows[i_ges][i_try][0]=MAX_start
+            i_ACTIVE_windows[i_ges][i_try][1]=MAX_contiguous
+    return np.array(i_ACTIVE_windows)
 
 def medfilt(channel, kernel_size=3):
     filtered=np.zeros(len(channel))
@@ -227,18 +152,11 @@ def plot_confusion_matrix(y_test, kinds, y_pred):
     plt.axis('auto')
     plt.show()
 
-def check(x, prin=0):
-    print("length: ", len(x))
-    print("type: ", type(x))
-    if type(x) == type(np.array([])): print("shape: ", x.shape)
-    if prin==1: print(x)
-    raise ValueError("-------------WORKING LINE--------------")
-
-def check_segment_len(ACTIVE_RMS_gestures):
-    for i in range(len(ACTIVE_RMS_gestures)):
+def check_segment_len(i_ACTIVE_windows):
+    for i in range(len(i_ACTIVE_windows)):
         print("%d번째 gesture의 각 try의 segment 길이들 : " %i, end='')
-        for j in range(len(ACTIVE_RMS_gestures[i])):
-            print(len(ACTIVE_RMS_gestures[i][j]), end=' ')
+        for j in range(len(i_ACTIVE_windows[i])):
+            print(i_ACTIVE_windows[i][j][1], end=' ')
         print()
 
 def plot_some_data(gestures):
@@ -261,40 +179,45 @@ def plot_some_data(gestures):
     plt.tight_layout()
     plt.show()
 
-def extract_X_y_for_one_session(gestures, PLOT_RANDOM_DATA):
+def extract_X_y_for_one_session(pre_gestures):
+    # Especially for Ref1, data reshaping into one array
+    gestures=np.zeros((pre_gestures.shape[0], pre_gestures.shape[1])).tolist()      #CONSTANT
+    for i_ges in range(len(pre_gestures)):
+        for i_try in range(len(pre_gestures[i_ges])):
+            gestures[i_ges][i_try]=pre_gestures[i_ges][i_try][0].copy()
+    gestures=np.array(gestures)
+
     # Signal Pre-processing & Construct windows
-    init_gesture=1
-    for gesture in gestures:
-        init_try=1
-        for one_try in gesture:
-            pre_processed_one_try = create_168_dimensional_window_vectors(one_try[0]) # one_try[0] : channels, ndarray
-            if init_try == 1:
-                pre_processed_tries_for_gesture = np.array([pre_processed_one_try])
-                init_try=0
-                continue
-            pre_processed_tries_for_gesture = np.append(pre_processed_tries_for_gesture, [pre_processed_one_try], axis=0)    # Adding height
-        if init_gesture==1:
-            pre_processed_gestures = np.array([pre_processed_tries_for_gesture])
-            init_gesture=0
-            continue
-        pre_processed_gestures = np.append(pre_processed_gestures, [pre_processed_tries_for_gesture], axis=0)   # Adding blocks
-
-    # Segmentation : Compute RMS
-    RMS_gestures=compute_RMS_gestures(pre_processed_gestures)
-    # Segmentation : Base normalization
+    ## Segmentation : Data processing : Discard useless data
+    gestures=np.delete(gestures,np.s_[7:192:8],2)
+    plot_ch(gestures, 3, 2, 50)
+    ## Preprocessing : Apply butterworth band-pass filter
+    gestures=np.apply_along_axis(butter_bandpass_filter, 2, gestures)
+    plot_ch(gestures, 3, 2, 50)
+    ## Segmentation : Data processing : Divide continuous data into 150 samples window
+    gestures=np.delete(gestures, np.s_[(gestures.shape[3]//WINDOW_SIZE)*WINDOW_SIZE:], 3)
+    gestures=np.reshape(gestures,(gestures.shape[0], gestures.shape[1], gestures.shape[2], gestures.shape[3]//WINDOW_SIZE, WINDOW_SIZE))
+    
+    # Determine ACTIVE windows
+    ## Segmentation : Compute RMS
+    RMS_gestures=gestures.copy()
+    RMS_gestures=np.apply_along_axis(compute_RMS, 4, RMS_gestures)
+    ## Segmentation : Base normalization
+    plt.imshow(RMS_gestures[3,2], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
+    plt.show()
     RMS_gestures=base_normalization(RMS_gestures)
-    # Segmentation : Median filtering
-    for i_ges in range(len(RMS_gestures)):
-        for i_try in range(len(RMS_gestures[i_ges])):
-            channels=RMS_gestures[i_ges][i_try].transpose()
-            for i_ch in range(len(channels)):
-                channels[i_ch]=medfilt(channels[i_ch])
-            RMS_gestures[i_ges][i_try]=channels.transpose()
-    # Segmentation : Dertermine which window is ACTIVE
-    i_ACTIVE_windows=extract_ACTIVE_window_i(RMS_gestures.tolist())
+    plt.imshow(RMS_gestures[3,2], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
+    plt.show()
+    ## Segmentation : Median filtering
+    RMS_gestures=np.apply_along_axis(medfilt, 3, RMS_gestures)
+    plt.imshow(RMS_gestures[3,2], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
+    plt.show()
+    ## Segmentation : Dertermine which window is ACTIVE
+    i_ACTIVE_windows=extract_ACTIVE_window_i(RMS_gestures)
 
+    ########################### WORKING LINE #############################
     # Feature extraction : Filter only ACTIVE windows
-    ACTIVE_pre_processed_gestures=ACTIVE_filter(i_ACTIVE_windows, pre_processed_gestures)
+    ACTIVE_pre_processed_gestures=ACTIVE_filter(i_ACTIVE_windows, gestures)
     # Feature extraction : Partition existing windows into N large windows and compute RMS for each large window
     ACTIVE_N_RMS_gestures=Repartition_N_Compute_RMS(ACTIVE_pre_processed_gestures, SEGMENT_N)
     # Feature extraction : Mean normalization for all channels in each window
@@ -308,8 +231,8 @@ def extract_X_y_for_one_session(gestures, PLOT_RANDOM_DATA):
     X, y = construct_X_y(mean_normalized_RMS)
     return X, y
 
-def plot_ch(i_gest,i_try,i_ch):
-    plt.plot(session[4][5][0][89,:])
+def plot_ch(data,i_gest,i_try=5,i_ch=89):
+    plt.plot(data[i_gest][i_try][i_ch,:])
     plt.show()
 
 def main():
@@ -317,9 +240,7 @@ def main():
     init_session=1
     for session in sessions.values():
         # Input data for each session
-        plot_ch(4,5,89)
-        X_session, y_session=extract_X_y_for_one_session(session, PLOT_RANDOM_DATA)
-        print("Processing...")
+        X_session, y_session=extract_X_y_for_one_session(session)
         if init_session==1:
             X=np.array(X_session)
             y=np.array(y_session)
