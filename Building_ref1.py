@@ -44,7 +44,7 @@ def load_mat_files(dataDir):
             sessions[session_name]=np.append(sessions[session_name], [io.loadmat(one_file)['gestures'][[1,3,6,7,10,12,18,24,25,29]]], axis=0)
             continue
         sessions[session_name]=np.append(sessions[session_name], [io.loadmat(one_file)['gestures']], axis=0)
-    if PRINT_TIME_CONSUMING: print("Loading mat files: ", time.time-t1)
+    if PRINT_TIME_CONSUMING: print("Loading mat files: %.3f" %(time.time-t1))
     return sessions
 
 def butter_bandpass_filter(data, lowcut=20.0, highcut=400.0, fs=2048, order=4):
@@ -63,7 +63,7 @@ def base_normalization(RMS_gestures):
     # Compute mean value of each channel of idle gesture
     average_channel_idle_gesture=np.mean(np.mean(RMS_gestures[0], 2), 0)
     # Subtract above value from every channel
-    if PRINT_TIME_CONSUMING: print("## base_normalization: ", time.time-t1)
+    if PRINT_TIME_CONSUMING: print("## base_normalization: %.2f" %(time.time-t1))
     return np.transpose(np.transpose(RMS_gestures,(0,1,3,2))-average_channel_idle_gesture,(0,1,3,2))
 
 def extract_ACTIVE_window_i(RMS_gestures):
@@ -93,7 +93,7 @@ def extract_ACTIVE_window_i(RMS_gestures):
                         contiguous=0
             i_ACTIVE_windows[i_ges][i_try][0]=MAX_start
             i_ACTIVE_windows[i_ges][i_try][1]=MAX_contiguous
-    if PRINT_TIME_CONSUMING: print("## extract_ACTIVE_window_i: ", time.time-t1)
+    if PRINT_TIME_CONSUMING: print("## extract_ACTIVE_window_i: %.2f" %(time.time-t1))
     return np.array(i_ACTIVE_windows)
 
 def medfilt(channel, kernel_size=3):
@@ -112,7 +112,7 @@ def ACTIVE_filter(i_ACTIVE_windows, gestures):
         for i_try in range(i_ACTIVE_windows.shape[1]):
             del list_gestures[i_ges][i_try][:i_ACTIVE_windows[i_ges][i_try][0]]
             del list_gestures[i_ges][i_try][i_ACTIVE_windows[i_ges][i_try][0]+i_ACTIVE_windows[i_ges][i_try][1]:]
-    if PRINT_TIME_CONSUMING: print("## ACTIVE_filter: ", time.time-t1)
+    if PRINT_TIME_CONSUMING: print("## ACTIVE_filter: %.2f" %(time.time-t1))
     return np.array(list_gestures)
 
 def Repartition_N_Compute_RMS(ACTIVE_gestures, N=SEGMENT_N):
@@ -133,7 +133,7 @@ def Repartition_N_Compute_RMS(ACTIVE_gestures, N=SEGMENT_N):
                     RMSs.append(compute_RMS(ACTIVE_N_gestures[i_ges][i_try][i_ch][(len(ACTIVE_N_gestures[i_ges][i_try][i_ch])//N)*i:(len(ACTIVE_N_gestures[i_ges][i_try][i_ch])//N)*(i+1)]))
                 ACTIVE_N_gestures[i_ges][i_try][i_ch]=np.array(RMSs)
             ACTIVE_N_gestures[i_ges][i_try]=np.array(ACTIVE_N_gestures[i_ges][i_try]).transpose()   # Change (4,10,168,N) -> (4,10,N,168)
-    if PRINT_TIME_CONSUMING: print("## Repartition_N_Compute_RMS: ", time.time-t1)
+    if PRINT_TIME_CONSUMING: print("## Repartition_N_Compute_RMS: %.2f" %(time.time-t1))
     return np.array(ACTIVE_N_gestures)
 
 def mean_normalization(ACTIVE_N_RMS_gestures):
@@ -145,16 +145,18 @@ def mean_normalization(ACTIVE_N_RMS_gestures):
                 Mean=np.mean(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin])
                 for i_ch in range(len(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin])):
                     ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin][i_ch]=(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin][i_ch]-Mean)/delta
-    if PRINT_TIME_CONSUMING: print("## mean_normalization: ", time.time-t1)
+    if PRINT_TIME_CONSUMING: print("## mean_normalization: %.2f" %(time.time-t1))
     return ACTIVE_N_RMS_gestures
 
 def construct_X_y(mean_normalized_RMS):
+    if PRINT_TIME_CONSUMING: t1=time.time
     X=np.reshape(mean_normalized_RMS, (mean_normalized_RMS.shape[0]*mean_normalized_RMS.shape[1]*mean_normalized_RMS.shape[2], mean_normalized_RMS.shape[3]))
     y=np.array([])
     for i_ges in range(mean_normalized_RMS.shape[0]):
         for i in range(mean_normalized_RMS.shape[1]):   # # of tries
             for j in range(mean_normalized_RMS.shape[2]):  # # of Larege windows
                 y=np.append(y, [i_ges])
+    if PRINT_TIME_CONSUMING: print("## construct_X_y: %.2f" %(time.time-t1))
     return X, y
 
 def plot_confusion_matrix(y_test, kinds, y_pred):
@@ -205,25 +207,25 @@ def extract_X_y_for_one_session(pre_gestures):
     ## Segmentation : Data processing : Discard useless data
     if PRINT_TIME_CONSUMING: t1=time.time
     gestures=np.delete(gestures,np.s_[7:192:8],2)
-    if PRINT_TIME_CONSUMING: print("# Discard useless data: ", time.time-t1)
+    if PRINT_TIME_CONSUMING: print("# Discard useless data: %.2f" %(time.time-t1))
     if PLOT_PRINT_PROCESSING: plot_ch(gestures, 3, 2, 50)
     ## Preprocessing : Apply butterworth band-pass filter
     if PRINT_TIME_CONSUMING: t1=time.time
     gestures=np.apply_along_axis(butter_bandpass_filter, 2, gestures)
-    if PRINT_TIME_CONSUMING: print("# Apply butterworth band-pass filter: ", time.time-t1)
+    if PRINT_TIME_CONSUMING: print("# Apply butterworth band-pass filter: %.2f" %(time.time-t1))
     if PLOT_PRINT_PROCESSING: plot_ch(gestures, 3, 2, 50)
     ## Segmentation : Data processing : Divide continuous data into 150 samples window
     if PRINT_TIME_CONSUMING: t1=time.time
     gestures=np.delete(gestures, np.s_[(gestures.shape[3]//WINDOW_SIZE)*WINDOW_SIZE:], 3)
     gestures=np.reshape(gestures,(gestures.shape[0], gestures.shape[1], gestures.shape[2], gestures.shape[3]//WINDOW_SIZE, WINDOW_SIZE))
-    if PRINT_TIME_CONSUMING: print("# Divide continuous data into 150 samples window: ", time.time-t1)
+    if PRINT_TIME_CONSUMING: print("# Divide continuous data into 150 samples window: %.2f" %(time.time-t1))
 
     # Determine ACTIVE windows
     ## Segmentation : Compute RMS
     if PRINT_TIME_CONSUMING: t1=time.time
     RMS_gestures=gestures.copy()
     RMS_gestures=np.apply_along_axis(compute_RMS, 4, RMS_gestures)
-    if PRINT_TIME_CONSUMING: print("# Compute RMS: ", time.time-t1)
+    if PRINT_TIME_CONSUMING: print("# Compute RMS: %.2f" %(time.time-t1))
     ## Segmentation : Base normalization
     if PLOT_PRINT_PROCESSING: 
         plt.imshow(RMS_gestures[3,2], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
@@ -235,7 +237,7 @@ def extract_X_y_for_one_session(pre_gestures):
     ## Segmentation : Median filtering
     if PRINT_TIME_CONSUMING: t1=time.time
     RMS_gestures=np.apply_along_axis(medfilt, 3, RMS_gestures)
-    if PRINT_TIME_CONSUMING: print("# Median filtering: ", time.time-t1)
+    if PRINT_TIME_CONSUMING: print("# Median filtering: %.2f" %(time.time-t1))
     if PLOT_PRINT_PROCESSING: 
         plt.imshow(RMS_gestures[3,2], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
         plt.show()
@@ -256,7 +258,7 @@ def extract_X_y_for_one_session(pre_gestures):
 
     # Naive Bayes classifier : Construct X and y
     X, y = construct_X_y(mean_normalized_RMS)
-    if PRINT_TIME_CONSUMING: print("extract_X_y_for_one_session: ", time.time-t1)
+    if PRINT_TIME_CONSUMING: print("extract_X_y_for_one_session: %.2f" %(time.time-t1))
     return X, y
 
 def plot_ch(data,i_gest,i_try=5,i_ch=89):
@@ -280,8 +282,12 @@ def main():
 
     # Naive Bayes classifier : Basic method : NOT LOOCV
     gnb = GaussianNB()
+    if PRINT_TIME_CONSUMING: t1=time.time
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_RATIO, random_state=0)
+    if PRINT_TIME_CONSUMING: print("Training: %.2f" %(time.time-t1))
+    if PRINT_TIME_CONSUMING: t1=time.time
     y_pred = gnb.fit(X_train, y_train).predict(X_test)
+    if PRINT_TIME_CONSUMING: print("Testing: %.2f" %(time.time-t1))
     print("Accuracy : %d%%" % (100-(((y_test != y_pred).sum()/X_test.shape[0])*100)))
     if PLOT_CONFUSION_MATRIX:
         plot_confusion_matrix(y_test, kinds, y_pred)
