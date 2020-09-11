@@ -23,7 +23,6 @@ PLOT_RANDOM_DATA = False
 PLOT_CONFUSION_MATRIX = True
 ACTUAL_COLUMN=24
 ACTUAL_RAW=7
-IDLE_GESTURE_EXIST = True
 PLOT_PRINT_PROCESSING = False
 PRINT_TIME_CONSUMING = True
 
@@ -36,11 +35,11 @@ def load_mat_files(dataDir):
     for one_file in files:
         session_name=one_file.split("\\")[-2]
         if not session_name in sessions:
-            if one_file[-5:]=="0.mat" and IDLE_GESTURE_EXIST == True:
+            if one_file[-5:]=="0.mat":
                 sessions[session_name]=np.array([io.loadmat(one_file)['gestures'][[1,3,6,7,10,12,18,24,25,29]]])
             else: sessions[session_name]=np.array([io.loadmat(one_file)['gestures']])
             continue
-        if one_file[-5:]=="0.mat" and IDLE_GESTURE_EXIST == True:
+        if one_file[-5:]=="0.mat":
             sessions[session_name]=np.append(sessions[session_name], [io.loadmat(one_file)['gestures'][[1,3,6,7,10,12,18,24,25,29]]], axis=0)
             continue
         sessions[session_name]=np.append(sessions[session_name], [io.loadmat(one_file)['gestures']], axis=0)
