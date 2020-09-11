@@ -292,6 +292,6 @@ def main():
     print("Accuracy : %d%%" % (100-(((y_test != y_pred).sum()/X_test.shape[0])*100)))
     if PLOT_CONFUSION_MATRIX:
         plot_confusion_matrix(y_test, kinds, y_pred)
-    if PRINT_TIME_CONSUMING: print("Testing: %.2f" %(time.time()-t_main))
+    if PRINT_TIME_CONSUMING: print("main: %.2f" %(time.time()-t_main))
 
 main()
