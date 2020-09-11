@@ -20,7 +20,7 @@ WINDOW_SIZE = 150    # 20:9.76ms, 150:73.2ms
 TEST_RATIO = 0.3
 SEGMENT_N = 3
 PLOT_RANDOM_DATA = False
-PLOT_CONFUSION_MATRIX = True
+PLOT_CONFUSION_MATRIX = False
 ACTUAL_COLUMN=24
 ACTUAL_RAW=7
 PLOT_PRINT_PROCESSING = False
@@ -30,21 +30,15 @@ def load_mat_files(dataDir):
     if PRINT_TIME_CONSUMING: t_load_mat_files=time.time()
     pathname=dataDir + "/**/*.mat"
     files = glob.glob(pathname, recursive=True)
-    sessions=dict()
+    sessions=[]
     #In idle gesture, we just use 2,4,7,8,11,13,19,25,26,30th tries in order to match the number of datas
     for one_file in files:
-        session_name=one_file.split("\\")[-2]
-        if not session_name in sessions:
-            if one_file[-5:]=="0.mat":
-                sessions[session_name]=np.array([io.loadmat(one_file)['gestures'][[1,3,6,7,10,12,18,24,25,29]]])
-            else: sessions[session_name]=np.array([io.loadmat(one_file)['gestures']])
-            continue
         if one_file[-5:]=="0.mat":
-            sessions[session_name]=np.append(sessions[session_name], [io.loadmat(one_file)['gestures'][[1,3,6,7,10,12,18,24,25,29]]], axis=0)
+            sessions.append(np.array([io.loadmat(one_file)['gestures'][[1,3,6,7,10,12,18,24,25,29]]]))
             continue
-        sessions[session_name]=np.append(sessions[session_name], [io.loadmat(one_file)['gestures']], axis=0)
+        np.append(sessions[-1], np.array([io.loadmat(one_file)['gestures']]))
     if PRINT_TIME_CONSUMING: print("Loading mat files: %.2f" %(time.time()-t_load_mat_files))
-    return sessions
+    return np.array(sessions)
 
 def butter_bandpass_filter(data, lowcut=20.0, highcut=400.0, fs=2048, order=4):
     nyq = 0.5 * fs
