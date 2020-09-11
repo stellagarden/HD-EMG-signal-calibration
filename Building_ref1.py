@@ -5,6 +5,7 @@ import seaborn as sns
 import random
 import pandas as pd
 import glob
+import time
 from mpl_toolkits import mplot3d
 from scipy import io
 from scipy.signal import butter, lfilter, freqz
@@ -24,8 +25,10 @@ ACTUAL_COLUMN=24
 ACTUAL_RAW=7
 IDLE_GESTURE_EXIST = True
 PLOT_PRINT_PROCESSING = False
+PRINT_TIME_CONSUMING = True
 
 def load_mat_files(dataDir):
+    if PRINT_TIME_CONSUMING: t1=time.time
     pathname=dataDir + "/**/*.mat"
     files = glob.glob(pathname, recursive=True)
     sessions=dict()
@@ -41,6 +44,7 @@ def load_mat_files(dataDir):
             sessions[session_name]=np.append(sessions[session_name], [io.loadmat(one_file)['gestures'][[1,3,6,7,10,12,18,24,25,29]]], axis=0)
             continue
         sessions[session_name]=np.append(sessions[session_name], [io.loadmat(one_file)['gestures']], axis=0)
+    if PRINT_TIME_CONSUMING: print("Loading mat files: ", time.time-t1)
     return sessions
 
 def butter_bandpass_filter(data, lowcut=20.0, highcut=400.0, fs=2048, order=4):
@@ -55,12 +59,15 @@ def compute_RMS(datas):
     return np.sqrt(np.mean(np.array(datas)**2))
 
 def base_normalization(RMS_gestures):
+    if PRINT_TIME_CONSUMING: t1=time.time
     # Compute mean value of each channel of idle gesture
     average_channel_idle_gesture=np.mean(np.mean(RMS_gestures[0], 2), 0)
     # Subtract above value from every channel
+    if PRINT_TIME_CONSUMING: print("## base_normalization: ", time.time-t1)
     return np.transpose(np.transpose(RMS_gestures,(0,1,3,2))-average_channel_idle_gesture,(0,1,3,2))
 
 def extract_ACTIVE_window_i(RMS_gestures):
+    if PRINT_TIME_CONSUMING: t1=time.time
     RMS_gestures=np.transpose(RMS_gestures,(0,1,3,2))
     ## Determine whether ACTIVE : Compute summarized RMS
     sum_RMSs=np.sum(RMS_gestures,3)
@@ -86,6 +93,7 @@ def extract_ACTIVE_window_i(RMS_gestures):
                         contiguous=0
             i_ACTIVE_windows[i_ges][i_try][0]=MAX_start
             i_ACTIVE_windows[i_ges][i_try][1]=MAX_contiguous
+    if PRINT_TIME_CONSUMING: print("## extract_ACTIVE_window_i: ", time.time-t1)
     return np.array(i_ACTIVE_windows)
 
 def medfilt(channel, kernel_size=3):
@@ -96,24 +104,26 @@ def medfilt(channel, kernel_size=3):
         filtered[i]=median([channel[j] for j in range(i-kernel_size//2, i+kernel_size//2+1)])
     return filtered
 
-def ACTIVE_filter(i_ACTIVE_windows, pre_processed_gestures):
+def ACTIVE_filter(i_ACTIVE_windows, gestures):
     # ACTIVE_filter : delete if the window is not ACTIVE
-    list_pre_processed_gestures=pre_processed_gestures.tolist()
-    for i_ges in range(len(list_pre_processed_gestures)):
-        for i_try in range(len(list_pre_processed_gestures[i_ges])):
-            for i_win in reversed(range(len(list_pre_processed_gestures[i_ges][i_try]))):
-                if not i_win in range(i_ACTIVE_windows[i_ges][i_try][0], i_ACTIVE_windows[i_ges][i_try][0]+i_ACTIVE_windows[i_ges][i_try][1]):
-                    del list_pre_processed_gestures[i_ges][i_try][i_win]
-    return np.array(list_pre_processed_gestures)
+    if PRINT_TIME_CONSUMING: t1=time.time
+    list_gestures=np.transpose(gestures, (0,1,3,2,4)).tolist()
+    for i_ges in range(i_ACTIVE_windows.shape[0]):
+        for i_try in range(i_ACTIVE_windows.shape[1]):
+            del list_gestures[i_ges][i_try][:i_ACTIVE_windows[i_ges][i_try][0]]
+            del list_gestures[i_ges][i_try][i_ACTIVE_windows[i_ges][i_try][0]+i_ACTIVE_windows[i_ges][i_try][1]:]
+    if PRINT_TIME_CONSUMING: print("## ACTIVE_filter: ", time.time-t1)
+    return np.array(list_gestures)
 
-def Repartition_N_Compute_RMS(ACTIVE_pre_processed_gestures, N=SEGMENT_N):
+def Repartition_N_Compute_RMS(ACTIVE_gestures, N=SEGMENT_N):
+    if PRINT_TIME_CONSUMING: t1=time.time
     # List all the data of each channel without partitioning into windows
-    ACTIVE_N_gestures=[[[[] for i_ch in range(len(ACTIVE_pre_processed_gestures[0][0][0]))] for i_try in range(ACTIVE_pre_processed_gestures.shape[1])] for i_ges in range(ACTIVE_pre_processed_gestures.shape[0])]     # CONSTANT
-    for i_ges in range(len(ACTIVE_pre_processed_gestures)):
-        for i_try in range(len(ACTIVE_pre_processed_gestures[i_ges])):
-            for i_seg in range(len(ACTIVE_pre_processed_gestures[i_ges][i_try])):
-                for i_ch in range(len(ACTIVE_pre_processed_gestures[i_ges][i_try][i_seg])):
-                    ACTIVE_N_gestures[i_ges][i_try][i_ch].extend(ACTIVE_pre_processed_gestures[i_ges][i_try][i_seg][i_ch])
+    ACTIVE_N_gestures=[[[[] for i_ch in range(len(ACTIVE_gestures[0][0][0]))] for i_try in range(ACTIVE_gestures.shape[1])] for i_ges in range(ACTIVE_gestures.shape[0])]     # CONSTANT
+    for i_ges in range(len(ACTIVE_gestures)):
+        for i_try in range(len(ACTIVE_gestures[i_ges])):
+            for i_seg in range(len(ACTIVE_gestures[i_ges][i_try])):
+                for i_ch in range(len(ACTIVE_gestures[i_ges][i_try][i_seg])):
+                    ACTIVE_N_gestures[i_ges][i_try][i_ch].extend(ACTIVE_gestures[i_ges][i_try][i_seg][i_ch])
     # Compute RMS in N large windows
     for i_ges in range(len(ACTIVE_N_gestures)):
         for i_try in range(len(ACTIVE_N_gestures[i_ges])):
@@ -123,9 +133,11 @@ def Repartition_N_Compute_RMS(ACTIVE_pre_processed_gestures, N=SEGMENT_N):
                     RMSs.append(compute_RMS(ACTIVE_N_gestures[i_ges][i_try][i_ch][(len(ACTIVE_N_gestures[i_ges][i_try][i_ch])//N)*i:(len(ACTIVE_N_gestures[i_ges][i_try][i_ch])//N)*(i+1)]))
                 ACTIVE_N_gestures[i_ges][i_try][i_ch]=np.array(RMSs)
             ACTIVE_N_gestures[i_ges][i_try]=np.array(ACTIVE_N_gestures[i_ges][i_try]).transpose()   # Change (4,10,168,N) -> (4,10,N,168)
+    if PRINT_TIME_CONSUMING: print("## Repartition_N_Compute_RMS: ", time.time-t1)
     return np.array(ACTIVE_N_gestures)
 
 def mean_normalization(ACTIVE_N_RMS_gestures):
+    if PRINT_TIME_CONSUMING: t1=time.time
     for i_ges in range(len(ACTIVE_N_RMS_gestures)):
         for i_try in range(len(ACTIVE_N_RMS_gestures[i_ges])):
             for i_Lwin in range(len(ACTIVE_N_RMS_gestures[i_ges][i_try])):
@@ -133,6 +145,7 @@ def mean_normalization(ACTIVE_N_RMS_gestures):
                 Mean=np.mean(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin])
                 for i_ch in range(len(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin])):
                     ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin][i_ch]=(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin][i_ch]-Mean)/delta
+    if PRINT_TIME_CONSUMING: print("## mean_normalization: ", time.time-t1)
     return ACTIVE_N_RMS_gestures
 
 def construct_X_y(mean_normalized_RMS):
@@ -180,6 +193,7 @@ def plot_some_data(gestures):
     plt.show()
 
 def extract_X_y_for_one_session(pre_gestures):
+    if PRINT_TIME_CONSUMING: t1=time.time
     # Especially for Ref1, data reshaping into one array
     gestures=np.zeros((pre_gestures.shape[0], pre_gestures.shape[1])).tolist()      #CONSTANT
     for i_ges in range(len(pre_gestures)):
@@ -189,19 +203,27 @@ def extract_X_y_for_one_session(pre_gestures):
 
     # Signal Pre-processing & Construct windows
     ## Segmentation : Data processing : Discard useless data
+    if PRINT_TIME_CONSUMING: t1=time.time
     gestures=np.delete(gestures,np.s_[7:192:8],2)
+    if PRINT_TIME_CONSUMING: print("# Discard useless data: ", time.time-t1)
     if PLOT_PRINT_PROCESSING: plot_ch(gestures, 3, 2, 50)
     ## Preprocessing : Apply butterworth band-pass filter
+    if PRINT_TIME_CONSUMING: t1=time.time
     gestures=np.apply_along_axis(butter_bandpass_filter, 2, gestures)
+    if PRINT_TIME_CONSUMING: print("# Apply butterworth band-pass filter: ", time.time-t1)
     if PLOT_PRINT_PROCESSING: plot_ch(gestures, 3, 2, 50)
     ## Segmentation : Data processing : Divide continuous data into 150 samples window
+    if PRINT_TIME_CONSUMING: t1=time.time
     gestures=np.delete(gestures, np.s_[(gestures.shape[3]//WINDOW_SIZE)*WINDOW_SIZE:], 3)
     gestures=np.reshape(gestures,(gestures.shape[0], gestures.shape[1], gestures.shape[2], gestures.shape[3]//WINDOW_SIZE, WINDOW_SIZE))
-    
+    if PRINT_TIME_CONSUMING: print("# Divide continuous data into 150 samples window: ", time.time-t1)
+
     # Determine ACTIVE windows
     ## Segmentation : Compute RMS
+    if PRINT_TIME_CONSUMING: t1=time.time
     RMS_gestures=gestures.copy()
     RMS_gestures=np.apply_along_axis(compute_RMS, 4, RMS_gestures)
+    if PRINT_TIME_CONSUMING: print("# Compute RMS: ", time.time-t1)
     ## Segmentation : Base normalization
     if PLOT_PRINT_PROCESSING: 
         plt.imshow(RMS_gestures[3,2], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
@@ -211,7 +233,9 @@ def extract_X_y_for_one_session(pre_gestures):
         plt.imshow(RMS_gestures[3,2], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
         plt.show()
     ## Segmentation : Median filtering
+    if PRINT_TIME_CONSUMING: t1=time.time
     RMS_gestures=np.apply_along_axis(medfilt, 3, RMS_gestures)
+    if PRINT_TIME_CONSUMING: print("# Median filtering: ", time.time-t1)
     if PLOT_PRINT_PROCESSING: 
         plt.imshow(RMS_gestures[3,2], cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
         plt.show()
@@ -220,18 +244,19 @@ def extract_X_y_for_one_session(pre_gestures):
 
     ########################### WORKING LINE #############################
     # Feature extraction : Filter only ACTIVE windows
-    ACTIVE_pre_processed_gestures=ACTIVE_filter(i_ACTIVE_windows, gestures)
+    ACTIVE_gestures=ACTIVE_filter(i_ACTIVE_windows, gestures)
     # Feature extraction : Partition existing windows into N large windows and compute RMS for each large window
-    ACTIVE_N_RMS_gestures=Repartition_N_Compute_RMS(ACTIVE_pre_processed_gestures, SEGMENT_N)
+    ACTIVE_N_RMS_gestures=Repartition_N_Compute_RMS(ACTIVE_gestures, SEGMENT_N)
     # Feature extraction : Mean normalization for all channels in each window
     mean_normalized_RMS=mean_normalization(ACTIVE_N_RMS_gestures)
     
     # Plot one data
-    if PLOT_RANDOM_DATA==True:
+    if PLOT_RANDOM_DATA:
         plot_some_data(mean_normalized_RMS)
 
     # Naive Bayes classifier : Construct X and y
     X, y = construct_X_y(mean_normalized_RMS)
+    if PRINT_TIME_CONSUMING: print("extract_X_y_for_one_session: ", time.time-t1)
     return X, y
 
 def plot_ch(data,i_gest,i_try=5,i_ch=89):
@@ -244,7 +269,7 @@ def main():
     for session in sessions.values():
         # Input data for each session
         X_session, y_session=extract_X_y_for_one_session(session)
-        if init_session==1:
+        if init_session:
             X=np.array(X_session)
             y=np.array(y_session)
             init_session=0
