@@ -156,7 +156,11 @@ def construct_X_y(mean_normalized_RMS):
         for i in range(mean_normalized_RMS.shape[1]):   # # of tries
             for j in range(mean_normalized_RMS.shape[2]):  # # of Larege windows
                 y=np.append(y, [i_ges])
+<<<<<<< HEAD
     if PRINT_TIME_CONSUMING: print("## construct_X_y: %.2f" %(time.time-t1))
+=======
+    if PRINT_TIME_CONSUMING: print("## construct_X_y: ", time.time-t1)
+>>>>>>> f5b2c46c644b981c3577d23c277a3ee53c571f29
     return X, y
 
 def plot_confusion_matrix(y_test, kinds, y_pred):
@@ -284,10 +288,17 @@ def main():
     gnb = GaussianNB()
     if PRINT_TIME_CONSUMING: t1=time.time
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_RATIO, random_state=0)
+<<<<<<< HEAD
     if PRINT_TIME_CONSUMING: print("Training: %.2f" %(time.time-t1))
     if PRINT_TIME_CONSUMING: t1=time.time
     y_pred = gnb.fit(X_train, y_train).predict(X_test)
     if PRINT_TIME_CONSUMING: print("Testing: %.2f" %(time.time-t1))
+=======
+    if PRINT_TIME_CONSUMING: print("Training: ", time.time-t1)
+    if PRINT_TIME_CONSUMING: t1=time.time
+    y_pred = gnb.fit(X_train, y_train).predict(X_test)
+    if PRINT_TIME_CONSUMING: print("Testing: ", time.time-t1)
+>>>>>>> f5b2c46c644b981c3577d23c277a3ee53c571f29
     print("Accuracy : %d%%" % (100-(((y_test != y_pred).sum()/X_test.shape[0])*100)))
     if PLOT_CONFUSION_MATRIX:
         plot_confusion_matrix(y_test, kinds, y_pred)
