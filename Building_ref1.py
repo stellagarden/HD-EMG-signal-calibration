@@ -149,12 +149,14 @@ def mean_normalization(ACTIVE_N_RMS_gestures):
     return ACTIVE_N_RMS_gestures
 
 def construct_X_y(mean_normalized_RMS):
+    if PRINT_TIME_CONSUMING: t1=time.time
     X=np.reshape(mean_normalized_RMS, (mean_normalized_RMS.shape[0]*mean_normalized_RMS.shape[1]*mean_normalized_RMS.shape[2], mean_normalized_RMS.shape[3]))
     y=np.array([])
     for i_ges in range(mean_normalized_RMS.shape[0]):
         for i in range(mean_normalized_RMS.shape[1]):   # # of tries
             for j in range(mean_normalized_RMS.shape[2]):  # # of Larege windows
                 y=np.append(y, [i_ges])
+    if PRINT_TIME_CONSUMING: print("## construct_X_y: ", time.time-t1)
     return X, y
 
 def plot_confusion_matrix(y_test, kinds, y_pred):
@@ -280,8 +282,12 @@ def main():
 
     # Naive Bayes classifier : Basic method : NOT LOOCV
     gnb = GaussianNB()
+    if PRINT_TIME_CONSUMING: t1=time.time
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_RATIO, random_state=0)
+    if PRINT_TIME_CONSUMING: print("Training: ", time.time-t1)
+    if PRINT_TIME_CONSUMING: t1=time.time
     y_pred = gnb.fit(X_train, y_train).predict(X_test)
+    if PRINT_TIME_CONSUMING: print("Testing: ", time.time-t1)
     print("Accuracy : %d%%" % (100-(((y_test != y_pred).sum()/X_test.shape[0])*100)))
     if PLOT_CONFUSION_MATRIX:
         plot_confusion_matrix(y_test, kinds, y_pred)
