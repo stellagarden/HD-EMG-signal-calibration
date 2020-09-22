@@ -30,15 +30,21 @@ def load_mat_files(dataDir):
     if PRINT_TIME_CONSUMING: t_load_mat_files=time.time()
     pathname=dataDir + "/**/*.mat"
     files = glob.glob(pathname, recursive=True)
-    sessions=[]
+    sessions=dict()
     #In idle gesture, we just use 2,4,7,8,11,13,19,25,26,30th tries in order to match the number of datas
     for one_file in files:
-        if one_file[-5:]=="0.mat":
-            sessions.append(np.array([io.loadmat(one_file)['gestures'][[1,3,6,7,10,12,18,24,25,29]]]))
+        session_name=one_file.split("\\")[-2]
+        if not session_name in sessions:
+            if one_file[-5:]=="0.mat":
+                sessions[session_name]=np.array([io.loadmat(one_file)['gestures'][[1,3,6,7,10,12,18,24,25,29]]])
+            else: sessions[session_name]=np.array([io.loadmat(one_file)['gestures']])
             continue
-        np.append(sessions[-1], np.array([io.loadmat(one_file)['gestures']]))
+        if one_file[-5:]=="0.mat":
+            sessions[session_name]=np.append(sessions[session_name], [io.loadmat(one_file)['gestures'][[1,3,6,7,10,12,18,24,25,29]]], axis=0)
+            continue
+        sessions[session_name]=np.append(sessions[session_name], [io.loadmat(one_file)['gestures']], axis=0)
     if PRINT_TIME_CONSUMING: print("Loading mat files: %.2f" %(time.time()-t_load_mat_files))
-    return np.array(sessions)
+    return sessions
 
 def butter_bandpass_filter(data, lowcut=20.0, highcut=400.0, fs=2048, order=4):
     nyq = 0.5 * fs
@@ -204,7 +210,12 @@ def extract_X_y_for_one_session(pre_gestures):
     if PLOT_PRINT_PROCESSING: plot_ch(gestures, 3, 2, 50)
     ## Preprocessing : Apply_butterworth_band_pass_filter
     if PRINT_TIME_CONSUMING: t_Apply_butterworth_band_pass_filter=time.time()
-    gestures=np.apply_along_axis(butter_bandpass_filter, 2, gestures)
+    #gestures=np.apply_along_axis(butter_bandpass_filter, 2, gestures)
+    ################# FOR LOOP TEST ##################
+    for i_ges in range(len(gestures)):
+        for i_try in range(len(gestures[i_ges])):
+            for i_win in range(len(gestures[i_ges][i_try])):
+               print() 
     if PRINT_TIME_CONSUMING: print("# Apply_butterworth_band_pass_filter: %.2f" %(time.time()-t_Apply_butterworth_band_pass_filter))
     if PLOT_PRINT_PROCESSING: plot_ch(gestures, 3, 2, 50)
     ## Segmentation : Data processing : Divide_continuous_data_into_150_samples_window
@@ -260,7 +271,7 @@ def plot_ch(data,i_gest,i_try=5,i_ch=89):
 
 def main():
     if PRINT_TIME_CONSUMING: t_main=time.time()
-    sessions=load_mat_files("./data/")  # Dict : sessions
+    sessions=load_mat_files("./data/")  # ndarray : sessions
     init_session=1
     for session in sessions.values():
         # Input data for each session
