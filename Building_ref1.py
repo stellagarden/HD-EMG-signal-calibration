@@ -151,8 +151,7 @@ def mean_normalization(ACTIVE_N_RMS_gestures):
             for i_Lwin in range(len(ACTIVE_N_RMS_gestures[i_ges][i_try])):
                 delta=max(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin])-min(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin])
                 Mean=np.mean(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin])
-                for i_ch in range(len(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin])):
-                    ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin][i_ch]=(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin][i_ch]-Mean)/delta
+                ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin]=(ACTIVE_N_RMS_gestures[i_ges][i_try][i_Lwin]-Mean)/delta
     if PRINT_TIME_CONSUMING: print("## mean_normalization: %.2f" %(time.time()-t_mean_normalization))
     return ACTIVE_N_RMS_gestures
 
