@@ -255,10 +255,10 @@ def extract_X_y_for_one_session(pre_gestures):
 
     # Feature extraction : Filter only ACTIVE windows
     ACTIVE_gestures=ACTIVE_filter(i_ACTIVE_windows, gestures)
-    ########################### WORKING LINE #############################
     # Feature extraction : Partition existing windows into N large windows and compute RMS for each large window
     ACTIVE_N_RMS_gestures=Repartition_N_Compute_RMS(ACTIVE_gestures, SEGMENT_N)
     # Feature extraction : Mean normalization for all channels in each window
+    ########################### WORKING LINE #############################
     mean_normalized_RMS=mean_normalization(ACTIVE_N_RMS_gestures)
     
     # Plot one data
