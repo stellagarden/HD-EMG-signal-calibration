@@ -210,12 +210,9 @@ def extract_X_y_for_one_session(pre_gestures):
     if PLOT_PRINT_PROCESSING: plot_ch(gestures, 3, 2, 50)
     ## Preprocessing : Apply_butterworth_band_pass_filter
     if PRINT_TIME_CONSUMING: t_Apply_butterworth_band_pass_filter=time.time()
-    #gestures=np.apply_along_axis(butter_bandpass_filter, 2, gestures)
-    ################# FOR LOOP TEST ##################
     for i_ges in range(len(gestures)):
         for i_try in range(len(gestures[i_ges])):
-            for i_win in range(len(gestures[i_ges][i_try])):
-               print() 
+            gestures[i_ges, i_try]=butter_bandpass_filter(gestures[i_ges, i_try])
     if PRINT_TIME_CONSUMING: print("# Apply_butterworth_band_pass_filter: %.2f" %(time.time()-t_Apply_butterworth_band_pass_filter))
     if PLOT_PRINT_PROCESSING: plot_ch(gestures, 3, 2, 50)
     ## Segmentation : Data processing : Divide_continuous_data_into_150_samples_window
