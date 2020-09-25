@@ -20,7 +20,7 @@ WINDOW_SIZE = 150    # 20:9.76ms, 150:73.2ms
 TEST_RATIO = 0.3
 SEGMENT_N = 3
 PLOT_RANDOM_DATA = False
-PLOT_CONFUSION_MATRIX = False
+PLOT_CONFUSION_MATRIX = True
 ACTUAL_COLUMN=24
 ACTUAL_RAW=7
 PLOT_PRINT_PROCESSING = False
@@ -298,8 +298,8 @@ def main():
     y_pred = gnb.fit(X_train, y_train).predict(X_test)
     if PRINT_TIME_CONSUMING: print("Testing: %.2f" %(time.time()-t_Testing))
     print("Accuracy : %d%%" % (100-(((y_test != y_pred).sum()/X_test.shape[0])*100)))
+    if PRINT_TIME_CONSUMING: print("main: %.2f" %(time.time()-t_main))
     if PLOT_CONFUSION_MATRIX:
         plot_confusion_matrix(y_test, kinds, y_pred)
-    if PRINT_TIME_CONSUMING: print("main: %.2f" %(time.time()-t_main))
 
 main()
