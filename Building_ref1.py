@@ -25,7 +25,7 @@ PLOT_CONFUSION_MATRIX = True
 ACTUAL_COLUMN=24
 ACTUAL_RAW=7
 PLOT_PRINT_PROCESSING = False
-PRINT_TIME_CONSUMING = True
+PRINT_TIME_CONSUMING = False
 GNB_CLASSIFY = False
 GMM_CLASSIFY = True
 
@@ -285,12 +285,18 @@ def gnb_classifier(X, y, TEST_RATIO=TEST_RATIO):
     if PLOT_CONFUSION_MATRIX:
         plot_confusion_matrix(y_test, list(set(y)), y_pred)
 
-def gmm_classifier(X, y, TEST_RATIO=TEST_RATIO):
-    if PRINT_TIME_CONSUMING: t_gmm_classifier=time.time()
+def interpolating(X, y):
+    
+
+def gmm_calibration(X, y, TEST_RATIO=TEST_RATIO):
+    if PRINT_TIME_CONSUMING: t_gmm_calibration=time.time()
+    interp2d()
+
     gmm = GaussianMixture(n_components=2).fit(X)
+    print(gmm)
     probs = gmm.predict_proba(X)
     print(probs[:5].round(3))
-    if PRINT_TIME_CONSUMING: print("#gmm_classifier: %.2f" %(time.time()-t_gmm_classifier))
+    if PRINT_TIME_CONSUMING: print("#gmm_calibration: %.2f" %(time.time()-t_gmm_calibration))
 
 def main():
     if PRINT_TIME_CONSUMING: t_main=time.time()
@@ -307,9 +313,10 @@ def main():
         X=np.append(X, X_session, axis=0)
         y=np.append(y, y_session)
 
+    if GMM_CLASSIFY: gmm_calibration(X, y)
+
     # Naive Bayes classifier : Basic method : NOT LOOCV
     if GNB_CLASSIFY: gnb_classifier(X, y)
-    if GMM_CLASSIFY : gmm_classifier(X, y)
     if PRINT_TIME_CONSUMING: print("main: %.2f" %(time.time()-t_main))
 
 main()
