@@ -16,6 +16,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import confusion_matrix
 from sklearn.datasets import make_blobs
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.mixture import GaussianMixture
 WINDOW_SIZE = 150    # 20:9.76ms, 150:73.2ms
 TEST_RATIO = 0.3
 SEGMENT_N = 3
@@ -25,6 +26,8 @@ ACTUAL_COLUMN=24
 ACTUAL_RAW=7
 PLOT_PRINT_PROCESSING = False
 PRINT_TIME_CONSUMING = True
+GNB_CLASSIFY = False
+GMM_CLASSIFY = True
 
 def load_mat_files(dataDir):
     if PRINT_TIME_CONSUMING: t_load_mat_files=time.time()
@@ -265,7 +268,7 @@ def extract_X_y_for_one_session(pre_gestures):
 
     # Naive Bayes classifier : Construct X and y
     X, y = construct_X_y(mean_normalized_RMS)
-    if PRINT_TIME_CONSUMING: print("extract_X_y_for_one_session: %.2f" %(time.time()-t_extract_X_y_for_one_session))
+    if PRINT_TIME_CONSUMING: print("extract_X_y_for_one_session: %.2f \n\n" %(time.time()-t_extract_X_y_for_one_session))
     return X, y
 
 def plot_ch(data,i_gest,i_try=5,i_ch=89):
@@ -273,19 +276,21 @@ def plot_ch(data,i_gest,i_try=5,i_ch=89):
     plt.show()
 
 def gnb_classifier(X, y, TEST_RATIO=TEST_RATIO):
+    if PRINT_TIME_CONSUMING: t_gnb_classifier=time.time()
     gnb = GaussianNB()
-    if PRINT_TIME_CONSUMING: t_Training=time.time()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_RATIO, random_state=0)
-    if PRINT_TIME_CONSUMING: print("Training: %.2f" %(time.time()-t_Training))
-    if PRINT_TIME_CONSUMING: t_Testing=time.time()
     y_pred = gnb.fit(X_train, y_train).predict(X_test)
-    if PRINT_TIME_CONSUMING: print("Testing: %.2f" %(time.time()-t_Testing))
     print("Accuracy : %d%%" % (100-(((y_test != y_pred).sum()/X_test.shape[0])*100)))
+    if PRINT_TIME_CONSUMING: print("#gnb_classifier: %.2f" %(time.time()-t_gnb_classifier))
     if PLOT_CONFUSION_MATRIX:
         plot_confusion_matrix(y_test, list(set(y)), y_pred)
 
 def gmm_classifier(X, y, TEST_RATIO=TEST_RATIO):
-    
+    if PRINT_TIME_CONSUMING: t_gmm_classifier=time.time()
+    gmm = GaussianMixture(n_components=2).fit(X)
+    probs = gmm.predict_proba(X)
+    print(probs[:5].round(3))
+    if PRINT_TIME_CONSUMING: print("#gmm_classifier: %.2f" %(time.time()-t_gmm_classifier))
 
 def main():
     if PRINT_TIME_CONSUMING: t_main=time.time()
@@ -303,8 +308,8 @@ def main():
         y=np.append(y, y_session)
 
     # Naive Bayes classifier : Basic method : NOT LOOCV
-    gnb_classifier(X, y)
-    gmm_classifier(X, y)
+    if GNB_CLASSIFY: gnb_classifier(X, y)
+    if GMM_CLASSIFY : gmm_classifier(X, y)
     if PRINT_TIME_CONSUMING: print("main: %.2f" %(time.time()-t_main))
 
 main()
