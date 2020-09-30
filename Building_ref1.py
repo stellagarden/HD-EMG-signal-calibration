@@ -272,6 +272,21 @@ def plot_ch(data,i_gest,i_try=5,i_ch=89):
     plt.plot(data[i_gest][i_try][i_ch,:])
     plt.show()
 
+def gnb_classifier(X, y, TEST_RATIO=TEST_RATIO):
+    gnb = GaussianNB()
+    if PRINT_TIME_CONSUMING: t_Training=time.time()
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_RATIO, random_state=0)
+    if PRINT_TIME_CONSUMING: print("Training: %.2f" %(time.time()-t_Training))
+    if PRINT_TIME_CONSUMING: t_Testing=time.time()
+    y_pred = gnb.fit(X_train, y_train).predict(X_test)
+    if PRINT_TIME_CONSUMING: print("Testing: %.2f" %(time.time()-t_Testing))
+    print("Accuracy : %d%%" % (100-(((y_test != y_pred).sum()/X_test.shape[0])*100)))
+    if PLOT_CONFUSION_MATRIX:
+        plot_confusion_matrix(y_test, list(set(y)), y_pred)
+
+def gmm_classifier(X, y, TEST_RATIO=TEST_RATIO):
+    
+
 def main():
     if PRINT_TIME_CONSUMING: t_main=time.time()
     sessions=load_mat_files("./data/")  # ndarray : sessions
@@ -286,19 +301,10 @@ def main():
             continue
         X=np.append(X, X_session, axis=0)
         y=np.append(y, y_session)
-    kinds=list(set(y))
 
     # Naive Bayes classifier : Basic method : NOT LOOCV
-    gnb = GaussianNB()
-    if PRINT_TIME_CONSUMING: t_Training=time.time()
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_RATIO, random_state=0)
-    if PRINT_TIME_CONSUMING: print("Training: %.2f" %(time.time()-t_Training))
-    if PRINT_TIME_CONSUMING: t_Testing=time.time()
-    y_pred = gnb.fit(X_train, y_train).predict(X_test)
-    if PRINT_TIME_CONSUMING: print("Testing: %.2f" %(time.time()-t_Testing))
-    print("Accuracy : %d%%" % (100-(((y_test != y_pred).sum()/X_test.shape[0])*100)))
+    gnb_classifier(X, y)
+    gmm_classifier(X, y)
     if PRINT_TIME_CONSUMING: print("main: %.2f" %(time.time()-t_main))
-    if PLOT_CONFUSION_MATRIX:
-        plot_confusion_matrix(y_test, kinds, y_pred)
 
 main()
