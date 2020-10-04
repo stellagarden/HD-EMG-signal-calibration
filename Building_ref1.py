@@ -275,6 +275,10 @@ def plot_ch(data,i_gest,i_try=5,i_ch=89):
     plt.plot(data[i_gest][i_try][i_ch,:])
     plt.show()
 
+def plot_a_data(data):
+    plt.imshow(data, cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
+    plt.show()
+
 def gnb_classifier(X, y, TEST_RATIO=TEST_RATIO):
     if PRINT_TIME_CONSUMING: t_gnb_classifier=time.time()
     gnb = GaussianNB()
@@ -285,13 +289,14 @@ def gnb_classifier(X, y, TEST_RATIO=TEST_RATIO):
     if PLOT_CONFUSION_MATRIX:
         plot_confusion_matrix(y_test, list(set(y)), y_pred)
 
-def interpolating(X, y):
-    
-
-def gmm_calibration(X, y, TEST_RATIO=TEST_RATIO):
+def gmm_calibration(X, y):
     if PRINT_TIME_CONSUMING: t_gmm_calibration=time.time()
-    interp2d()
-
+    #interpolate
+    y,x=np.meshgrid(range(ACTUAL_RAW),range(ACTUAL_COLUMN))
+    interpolated_X=np.zeros(X.shape[:1])
+    for i_session in X.shape[0]:
+        for i_data in X.shape[1]:
+            interpolated_X[i_session, i_data]=interp2d(y,x,X[i_session, i_data],kind='cubic')
     gmm = GaussianMixture(n_components=2).fit(X)
     print(gmm)
     probs = gmm.predict_proba(X)
@@ -306,13 +311,14 @@ def main():
         # Input data for each session
         X_session, y_session=extract_X_y_for_one_session(session)
         if init_session:
-            X=np.array(X_session)
-            y=np.array(y_session)
+            X=np.array([X_session])
+            y=np.array([y_session])
             init_session=0
             continue
-        X=np.append(X, X_session, axis=0)
-        y=np.append(y, y_session)
+        X=np.append(X, [X_session], axis=0)
+        y=np.append(y, [y_session], axis=0)
 
+    X=np.reshape(X, (X.shape[0], X.shape[1], ACTUAL_COLUMN, ACTUAL_RAW))
     if GMM_CLASSIFY: gmm_calibration(X, y)
 
     # Naive Bayes classifier : Basic method : NOT LOOCV
