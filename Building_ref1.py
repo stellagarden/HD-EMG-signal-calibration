@@ -26,8 +26,8 @@ ACTUAL_COLUMN=24
 ACTUAL_RAW=7
 PLOT_PRINT_PROCESSING = False
 PRINT_TIME_CONSUMING = False
-GNB_CLASSIFY = False
-GMM_CLASSIFY = True
+GNB_CLASSIFY = True
+GMM_CLASSIFY = False
 
 def load_mat_files(dataDir):
     if PRINT_TIME_CONSUMING: t_load_mat_files=time.time()
@@ -158,14 +158,15 @@ def mean_normalization(ACTIVE_N_RMS_gestures):
     if PRINT_TIME_CONSUMING: print("## mean_normalization: %.2f" %(time.time()-t_mean_normalization))
     return ACTIVE_N_RMS_gestures
 
-def construct_X_y(mean_normalized_RMS):
+def construct_X_y(refined_data):
     if PRINT_TIME_CONSUMING: t_construct_X_y=time.time()
-    X=np.reshape(mean_normalized_RMS, (mean_normalized_RMS.shape[0]*mean_normalized_RMS.shape[1]*mean_normalized_RMS.shape[2], mean_normalized_RMS.shape[3]))
+    X=np.reshape(refined_data, (refined_data.shape[0]*refined_data.shape[1]*refined_data.shape[2]*refined_data.shape[3], refined_data.shape[4]))
     y=np.array([])
-    for i_ges in range(mean_normalized_RMS.shape[0]):
-        for i in range(mean_normalized_RMS.shape[1]):   # # of tries
-            for j in range(mean_normalized_RMS.shape[2]):  # # of Larege windows
-                y=np.append(y, [i_ges])
+    for i in range(refined_data.shape[0]):  # # of sessions
+        for i_ges in range(refined_data.shape[0]):
+            for j in range(refined_data.shape[1]):   # # of tries
+                for k in range(refined_data.shape[2]):  # # of Larege windows
+                    y=np.append(y, [i_ges])
     if PRINT_TIME_CONSUMING: print("## construct_X_y: %.2f" %(time.time()-t_construct_X_y))
     return X, y
 
@@ -204,8 +205,8 @@ def plot_some_data(gestures):
     plt.tight_layout()
     plt.show()
 
-def extract_X_y_for_one_session(pre_gestures):
-    if PRINT_TIME_CONSUMING: t_extract_X_y_for_one_session=time.time()
+def refined_data_for_each_session(pre_gestures):
+    if PRINT_TIME_CONSUMING: t_refined_data_for_each_session=time.time()
     # Especially for Ref1, data reshaping into one array
     gestures=np.zeros((pre_gestures.shape[0], pre_gestures.shape[1])).tolist()      #CONSTANT
     for i_ges in range(len(pre_gestures)):
@@ -258,7 +259,7 @@ def extract_X_y_for_one_session(pre_gestures):
     # Feature extraction : Filter only ACTIVE windows
     ACTIVE_gestures=ACTIVE_filter(i_ACTIVE_windows, gestures)
     # Feature extraction : Partition existing windows into N large windows and compute RMS for each large window
-    ACTIVE_N_RMS_gestures=Repartition_N_Compute_RMS(ACTIVE_gestures, SEGMENT_N)
+    ACTIVE_N_RMS_gestures=Repartition_N_Compute_RMS(ACTIVE_gestures)
     # Feature extraction : Mean normalization for all channels in each window
     mean_normalized_RMS=mean_normalization(ACTIVE_N_RMS_gestures)
     
@@ -266,10 +267,9 @@ def extract_X_y_for_one_session(pre_gestures):
     if PLOT_RANDOM_DATA:
         plot_some_data(mean_normalized_RMS)
 
-    # Naive Bayes classifier : Construct X and y
-    X, y = construct_X_y(mean_normalized_RMS)
-    if PRINT_TIME_CONSUMING: print("extract_X_y_for_one_session: %.2f \n\n" %(time.time()-t_extract_X_y_for_one_session))
-    return X, y
+
+    if PRINT_TIME_CONSUMING: print("refined_data_for_each_session: %.2f \n\n" %(time.time()-t_refined_data_for_each_session))
+    return mean_normalized_RMS
 
 def plot_ch(data,i_gest,i_try=5,i_ch=89):
     plt.plot(data[i_gest][i_try][i_ch,:])
@@ -279,8 +279,13 @@ def plot_a_data(data):
     plt.imshow(data, cmap='hot_r', interpolation='nearest', vmin=0, vmax=0.0035)
     plt.show()
 
-def gnb_classifier(X, y, TEST_RATIO=TEST_RATIO):
+def gnb_classifier(refined_data, TEST_RATIO=TEST_RATIO):
     if PRINT_TIME_CONSUMING: t_gnb_classifier=time.time()
+
+#########################################################################3
+    # Naive Bayes classifier : Construct X and y
+    X, y = construct_X_y(refined_data)
+#########################################################################
     gnb = GaussianNB()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_RATIO, random_state=0)
     y_pred = gnb.fit(X_train, y_train).predict(X_test)
@@ -289,18 +294,23 @@ def gnb_classifier(X, y, TEST_RATIO=TEST_RATIO):
     if PLOT_CONFUSION_MATRIX:
         plot_confusion_matrix(y_test, list(set(y)), y_pred)
 
-def gmm_calibration(X, y):
+def gmm_calibration(refined_data):
     if PRINT_TIME_CONSUMING: t_gmm_calibration=time.time()
+    """
     #interpolate
     y,x=np.meshgrid(range(ACTUAL_RAW),range(ACTUAL_COLUMN))
-    interpolated_X=np.zeros(X.shape[:1])
-    for i_session in X.shape[0]:
-        for i_data in X.shape[1]:
-            interpolated_X[i_session, i_data]=interp2d(y,x,X[i_session, i_data],kind='cubic')
+    interpolated_X=[]
+    for i_session in range(X.shape[0]):
+        interpolated_X.append([])
+        for i_data in range(X.shape[1]):
+            interpolated_X[-1].append(interp2d(y,x,X[i_session, i_data],kind='cubic'))
+    if PLOT_PRINT_PROCESSING: plot_a_data(X[0,130])
+    
     gmm = GaussianMixture(n_components=2).fit(X)
     print(gmm)
     probs = gmm.predict_proba(X)
     print(probs[:5].round(3))
+    """
     if PRINT_TIME_CONSUMING: print("#gmm_calibration: %.2f" %(time.time()-t_gmm_calibration))
 
 def main():
@@ -309,20 +319,17 @@ def main():
     init_session=1
     for session in sessions.values():
         # Input data for each session
-        X_session, y_session=extract_X_y_for_one_session(session)
+        refined_data_session=refined_data_for_each_session(session)
         if init_session:
-            X=np.array([X_session])
-            y=np.array([y_session])
+            refined_data=np.array([refined_data_session])
             init_session=0
             continue
-        X=np.append(X, [X_session], axis=0)
-        y=np.append(y, [y_session], axis=0)
+        refined_data=np.append(refined_data, [refined_data_session], axis=0)
 
-    X=np.reshape(X, (X.shape[0], X.shape[1], ACTUAL_COLUMN, ACTUAL_RAW))
-    if GMM_CLASSIFY: gmm_calibration(X, y)
-
+    # Calibraion : GMM method
+    if GMM_CLASSIFY: gmm_calibration(refined_data)
     # Naive Bayes classifier : Basic method : NOT LOOCV
-    if GNB_CLASSIFY: gnb_classifier(X, y)
+    if GNB_CLASSIFY: gnb_classifier(refined_data)
     if PRINT_TIME_CONSUMING: print("main: %.2f" %(time.time()-t_main))
 
 main()
