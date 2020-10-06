@@ -22,8 +22,8 @@ SEGMENT_N = 3
 ACTUAL_COLUMN=24
 ACTUAL_RAW=7
 
-PLOT_RANDOM_DATA = False
-PLOT_PRINT_PROCESSING = False
+PLOT_RANDOM_DATA = True
+PLOT_PRINT_PROCESSING = True
 PRINT_TIME_CONSUMING = False
 GMM_CALIBRATE = False
 GNB_CLASSIFY = True
@@ -186,8 +186,8 @@ def plot_some_data(gestures):
     plt.tight_layout()
     plt.show()
 
-def refined_data_for_each_session(pre_gestures):
-    if PRINT_TIME_CONSUMING: t_refined_data_for_each_session=time()
+def extract_X_y_for_one_session(pre_gestures):
+    if PRINT_TIME_CONSUMING: t_extract_X_y_for_one_session=time()
     # Especially for Ref1, data reshaping into one array
     gestures=np.zeros((pre_gestures.shape[0], pre_gestures.shape[1])).tolist()      #CONSTANT
     for i_ges in range(len(pre_gestures)):
@@ -203,9 +203,15 @@ def refined_data_for_each_session(pre_gestures):
     if PLOT_PRINT_PROCESSING: plot_ch(gestures, 3, 2, 50)
     ## Preprocessing : Apply_butterworth_band_pass_filter
     if PRINT_TIME_CONSUMING: t_Apply_butterworth_band_pass_filter=time()
+#########################################################################################################################################
+
+    # gestures=np.apply_along_axis(butter_bandpass_filter, 2, gestures)
     for i_ges in range(len(gestures)):
         for i_try in range(len(gestures[i_ges])):
-            gestures[i_ges, i_try]=butter_bandpass_filter(gestures[i_ges, i_try])
+            for i_ch in range(len(gestures[i_ges][i_try])):
+                gestures[i_ges, i_try, i_ch]=butter_bandpass_filter(gestures[i_ges, i_try, i_ch])
+
+#########################################################################################################################################
     if PRINT_TIME_CONSUMING: print("# Apply_butterworth_band_pass_filter: %.2f" %(time()-t_Apply_butterworth_band_pass_filter))
     if PLOT_PRINT_PROCESSING: plot_ch(gestures, 3, 2, 50)
     ## Segmentation : Data processing : Divide_continuous_data_into_150_samples_window
@@ -247,10 +253,12 @@ def refined_data_for_each_session(pre_gestures):
     # Plot one data
     if PLOT_RANDOM_DATA:
         plot_some_data(mean_normalized_RMS)
-    if PRINT_TIME_CONSUMING: print("refined_data_for_each_session: %.2f \n\n" %(time()-t_refined_data_for_each_session))
-    return mean_normalized_RMS
+    # Naive Bayes classifier : Construct X and y
+    X, y = construct_X_y(mean_normalized_RMS)
+    if PRINT_TIME_CONSUMING: print("#extract_X_y_for_one_session: %.2f" %(time()-t_extract_X_y_for_one_session))
+    return X, y
 
-def plot_ch(data,i_gest,i_try=5,i_ch=89):
+def plot_ch(data,i_gest,i_try=2,i_ch=50):
     plt.plot(data[i_gest][i_try][i_ch,:])
     plt.show()
 
@@ -266,22 +274,17 @@ def plot_confusion_matrix(y_test, kinds, y_pred):
     plt.axis('auto')
     plt.show()
 
-def construct_X_y(refined_data):
-    if PRINT_TIME_CONSUMING: t_construct_X_y=time()
-    X=np.reshape(refined_data, (refined_data.shape[0]*refined_data.shape[1]*refined_data.shape[2]*refined_data.shape[3], refined_data.shape[4]))
+def construct_X_y(mean_normalized_RMS):
+    X=np.reshape(mean_normalized_RMS, (mean_normalized_RMS.shape[0]*mean_normalized_RMS.shape[1]*mean_normalized_RMS.shape[2], mean_normalized_RMS.shape[3]))
     y=np.array([])
-    for i in range(refined_data.shape[0]):  # # of sessions
-        for i_ges in range(refined_data.shape[1]):
-            for j in range(refined_data.shape[2]):   # # of tries
-                for k in range(refined_data.shape[3]):  # # of Larege windows
-                    y=np.append(y, [i_ges])
-    if PRINT_TIME_CONSUMING: print("## construct_X_y: %.2f" %(time()-t_construct_X_y))
+    for i_ges in range(mean_normalized_RMS.shape[0]):
+        for i in range(mean_normalized_RMS.shape[1]):   # # of tries
+            for j in range(mean_normalized_RMS.shape[2]):  # # of Larege windows
+                y=np.append(y, [i_ges])
     return X, y
     
-def gnb_classifier(refined_data):
+def gnb_classifier(X,y):
     if PRINT_TIME_CONSUMING: t_gnb_classifier=time()
-    # Construct X and y
-    X, y = construct_X_y(refined_data)
     # Classifying
     gnb = GaussianNB()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_RATIO, random_state=0)
@@ -312,21 +315,24 @@ def gmm_calibration(refined_data):
 
 def main():
     if PRINT_TIME_CONSUMING: t_main=time()
-    sessions=load_mat_files("./data/")  # ndarray : sessions
+    sessions=load_mat_files("./data/")  # Dict : sessions
     init_session=1
     for session in sessions.values():
         # Input data for each session
-        refined_data_session=refined_data_for_each_session(session)
-        if init_session:
-            refined_data=np.array([refined_data_session])
+        X_session, y_session=extract_X_y_for_one_session(session)
+        if init_session==1:
+            X=np.array(X_session)
+            y=np.array(y_session)
             init_session=0
             continue
-        refined_data=np.append(refined_data, [refined_data_session], axis=0)
+        X=np.append(X, X_session, axis=0)
+        y=np.append(y, y_session)
+    kinds=list(set(y))
 
     # Calibraion : GMM method
     if GMM_CALIBRATE: gmm_calibration(refined_data)
     # Naive Bayes classifier : Basic method : NOT LOOCV
-    if GNB_CLASSIFY: gnb_classifier(refined_data)
+    if GNB_CLASSIFY: gnb_classifier(X,y)
     if PRINT_TIME_CONSUMING: print("main: %.2f" %(time()-t_main))
 
 main()
