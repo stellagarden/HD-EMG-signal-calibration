@@ -61,15 +61,6 @@ def butter_bandpass_filter(data, lowcut=20.0, highcut=400.0, fs=2048, order=4):
 def compute_RMS(datas):
     return np.sqrt(np.mean(np.array(datas)**2))
 
-def compute_RMS_gestures(gestures):
-    RMS_gestures=np.zeros((gestures.shape[:-1]))
-    for i_ges in range(gestures.shape[0]):
-        for i_try in range(gestures.shape[1]):
-            for i_ch in range(gestures.shape[2]):
-                for i_win in range(gestures.shape[3]):
-                    RMS_gestures[i_ges, i_try, i_ch, i_win]=compute_RMS(gestures[i_ges, i_try, i_ch, i_win])
-    return RMS_gestures
-
 def base_normalization(RMS_gestures):
     if PRINT_TIME_CONSUMING: t_base_normalization=time()
     # Compute mean value of each channel of idle gesture
@@ -235,7 +226,8 @@ def extract_X_y_for_one_session(pre_gestures):
     # Determine ACTIVE windows
     ## Segmentation : Compute_RMS
     if PRINT_TIME_CONSUMING: t_Compute_RMS=time()
-    RMS_gestures=compute_RMS_gestures(gestures)
+    RMS_gestures=gestures.copy()
+    RMS_gestures=np.apply_along_axis(compute_RMS, 4, RMS_gestures)
     if PRINT_TIME_CONSUMING: print("# Compute_RMS: %.2f" %(time()-t_Compute_RMS))
     ## Segmentation : Base normalization
     if PLOT_PRINT_PROCESSING: 
