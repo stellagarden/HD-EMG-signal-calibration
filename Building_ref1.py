@@ -24,7 +24,7 @@ ACTUAL_RAW=7
 
 PLOT_RANDOM_DATA = True
 PLOT_PRINT_PROCESSING = True
-PRINT_TIME_CONSUMING = False
+PRINT_TIME_CONSUMING = True
 GMM_CALIBRATE = False
 GNB_CLASSIFY = True
 PLOT_CONFUSION_MATRIX = True
@@ -203,15 +203,12 @@ def extract_X_y_for_one_session(pre_gestures):
     if PLOT_PRINT_PROCESSING: plot_ch(gestures, 3, 2, 50)
     ## Preprocessing : Apply_butterworth_band_pass_filter
     if PRINT_TIME_CONSUMING: t_Apply_butterworth_band_pass_filter=time()
-#########################################################################################################################################
-
-    # gestures=np.apply_along_axis(butter_bandpass_filter, 2, gestures)
+    gestures=np.transpose(gestures, (0,1,3,2))
     for i_ges in range(len(gestures)):
         for i_try in range(len(gestures[i_ges])):
-            for i_ch in range(len(gestures[i_ges][i_try])):
-                gestures[i_ges, i_try, i_ch]=butter_bandpass_filter(gestures[i_ges, i_try, i_ch])
-
-#########################################################################################################################################
+            for i_time in range(len(gestures[i_ges][i_try])):
+                gestures[i_ges, i_try, i_time]=butter_bandpass_filter(gestures[i_ges, i_try, i_time])
+    gestures=np.transpose(gestures, (0,1,3,2))
     if PRINT_TIME_CONSUMING: print("# Apply_butterworth_band_pass_filter: %.2f" %(time()-t_Apply_butterworth_band_pass_filter))
     if PLOT_PRINT_PROCESSING: plot_ch(gestures, 3, 2, 50)
     ## Segmentation : Data processing : Divide_continuous_data_into_150_samples_window
