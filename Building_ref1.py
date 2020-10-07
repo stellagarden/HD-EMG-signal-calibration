@@ -22,8 +22,8 @@ SEGMENT_N = 3
 ACTUAL_COLUMN=24
 ACTUAL_RAW=7
 
-PLOT_RANDOM_DATA = True
-PLOT_PRINT_PROCESSING = True
+PLOT_RANDOM_DATA = False
+PLOT_PRINT_PROCESSING = False
 PRINT_TIME_CONSUMING = True
 GMM_CALIBRATE = False
 GNB_CLASSIFY = True
@@ -186,6 +186,21 @@ def plot_some_data(gestures):
     plt.tight_layout()
     plt.show()
 
+def plot_some_X_y(X, y):
+    # Choose random three data
+    chose=[randint(0,len(X)-1) for i in range(10)]
+    # Plot
+    yy,xx=np.meshgrid(range(ACTUAL_RAW),range(ACTUAL_COLUMN))
+    fig, ax = plt.subplots(nrows=10)
+    im=[]
+    for i in range(len(chose)):
+        df = DataFrame({"x":xx.flatten(), "y":yy.flatten(),"value":X[chose[i]].flatten()}).pivot(index="y", columns="x", values="value")
+        im.append(ax[i].imshow(df.values, cmap="viridis", vmin=0, vmax=1))
+        ax[i].set_title("%d gesture data" %(y[chose[i]]))
+        fig.colorbar(im[i], ax=ax[i])
+    plt.tight_layout()
+    plt.show()
+
 def extract_X_y_for_one_session(pre_gestures):
     if PRINT_TIME_CONSUMING: t_extract_X_y_for_one_session=time()
     # Especially for Ref1, data reshaping into one array
@@ -252,6 +267,8 @@ def extract_X_y_for_one_session(pre_gestures):
         plot_some_data(mean_normalized_RMS)
     # Naive Bayes classifier : Construct X and y
     X, y = construct_X_y(mean_normalized_RMS)
+    plot_some_X_y(X, y)
+
     if PRINT_TIME_CONSUMING: print("#extract_X_y_for_one_session: %.2f" %(time()-t_extract_X_y_for_one_session))
     return X, y
 
@@ -272,15 +289,17 @@ def plot_confusion_matrix(y_test, kinds, y_pred):
     plt.show()
 
 def construct_X_y(mean_normalized_RMS):
+    if PRINT_TIME_CONSUMING: t_mean_normalized_RMS=time()
     X=np.reshape(mean_normalized_RMS, (mean_normalized_RMS.shape[0]*mean_normalized_RMS.shape[1]*mean_normalized_RMS.shape[2], mean_normalized_RMS.shape[3]))
     y=np.array([])
     for i_ges in range(mean_normalized_RMS.shape[0]):
         for i in range(mean_normalized_RMS.shape[1]):   # # of tries
             for j in range(mean_normalized_RMS.shape[2]):  # # of Larege windows
                 y=np.append(y, [i_ges])
+    if PRINT_TIME_CONSUMING: print("## construct_X_y: %.2f" %(time()-t_mean_normalized_RMS))
     return X, y
     
-def gnb_classifier(X,y):
+def gnb_classifier(X,y,TEST_RATIO=TEST_RATIO):
     if PRINT_TIME_CONSUMING: t_gnb_classifier=time()
     # Classifying
     gnb = GaussianNB()
@@ -324,10 +343,9 @@ def main():
             continue
         X=np.append(X, X_session, axis=0)
         y=np.append(y, y_session)
-    kinds=list(set(y))
 
     # Calibraion : GMM method
-    if GMM_CALIBRATE: gmm_calibration(refined_data)
+    # if GMM_CALIBRATE: gmm_calibration(refined_data)
     # Naive Bayes classifier : Basic method : NOT LOOCV
     if GNB_CLASSIFY: gnb_classifier(X,y)
     if PRINT_TIME_CONSUMING: print("main: %.2f" %(time()-t_main))
