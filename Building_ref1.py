@@ -279,7 +279,7 @@ def construct_X_y(refined_data):
     if PRINT_TIME_CONSUMING: print("## construct_X_y: %.2f" %(time()-t_construct_X_y))
     return X, y
     
-def gnb_classifier(refined_data,TEST_RATIO=TEST_RATIO):
+def gnb_classifier(refined_data):
     if PRINT_TIME_CONSUMING: t_gnb_classifier=time()
     # Construct X and y
     X, y = construct_X_y(refined_data)
