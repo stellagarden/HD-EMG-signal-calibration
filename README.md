@@ -1,11 +1,11 @@
-# 2020_Summer_Individual_study
+# HD EMG signal calibration
 
-## Notion
+## Description
 
 | .             | .                                                                                    |
 | ------------- | ------------------------------------------------------------------------------------ |
-| Notion Link   | [Notebook](https://www.notion.so/SubNote-c44b5edc2bce4f158651a44a88177dc6)           |
-| Consists of   | Ref 1 summary, Ref 3 summary (lite), Programming timeline                            |
+| Duration      | Jul 2020 - Nov 2020 |
+| Notebook   | [Notion](https://www.notion.so/SubNote-c44b5edc2bce4f158651a44a88177dc6) : Paper summaries, Programming timeline    |
 | Daily&Weekly Report | Unfortunately written in Korean                                               |
 
 <br>
