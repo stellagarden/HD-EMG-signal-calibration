@@ -1,7 +1,7 @@
 # HD EMG signal calibration
 
 ### Duration and Location
-- Jul 2020 - Nov 2020
+- Jul 2020 - Nov 2020 (2020 Fall)
 - Neuro-Rehabilitation Engineering Laboratory, KAIST (Daejeon, South Korea)
 
 ### Description
